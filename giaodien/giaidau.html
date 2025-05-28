@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giải Đấu</title>
+    <link rel="stylesheet" href="giaidau.css">
+</head>
+<body>
+    <div class="header">
+        <div class="logo">🎮</div>
+        <div class="nav">
+          <a href="index.html">Trang chủ</a>
+          <a href="giaidau.html">Giải đấu</a>
+          <div class="dropdown">
+            <a href="#">Đội thi đấu ▾</a>
+            <div class="dropdown-content">
+              <a href="timdoituyen.html">Tìm đội tuyển</a>
+              <a href="taodoituyen.html">Tạo đội tuyển</a>
+            </div>
+          </div>
+          <a href="trandau.html">Trận Đấu</a>
+          <a href="xephang.html">Bảng Xếp Hạng</a>
+          <a href="lichsugiaidau.html">Lịch Sử Đấu</a>
+        </div>
+    </div>
+<div class="search-bar">
+    <input type="text" id="searchInput" placeholder="Tìm kiếm Giải Đấu" />
+    <div class="create">
+        <a href="taogiaidau.html">Tạo Giải Đấu</a>
+    </div>
+</div>
+
+
+        <div id="giaidauContainer" class="card-container">
+        <!-- Card sẽ được tạo bằng JS và chèn vào đây -->
+    </div>
+
+    <script>
+async function loadGiaiDau() {
+    try {
+        const res = await fetch('http://127.0.0.1:5000/GiaiDau/GetAll');
+        const data = await res.json();
+
+        const container = document.getElementById('giaidauContainer');
+        container.innerHTML = '';
+
+        data.forEach(item => {
+            const card = document.createElement('div');
+            card.classList.add('card');
+            card.setAttribute('data-ten', item.TenGiai.toLowerCase());
+
+            card.innerHTML = `
+                <h3>${item.TenGiai}</h3>
+                <p><strong>Ngày bắt đầu:</strong> ${item.NgayBatDau || 'Chưa xác định'}</p>
+                <p><strong>Ngày kết thúc:</strong> ${item.NgayKetThuc || 'Chưa xác định'}</p>
+                <p class="mota">${item.MoTa || 'Không có mô tả'}</p>
+            `;
+            container.appendChild(card);
+        });
+    } catch (error) {
+        console.error('Lỗi khi lấy dữ liệu:', error);
+    }
+}
+
+function searchGiaiDau() {
+    const filter = document.getElementById('searchInput').value.toLowerCase();
+    const cards = document.querySelectorAll('#giaidauContainer .card');
+
+    cards.forEach(card => {
+        const ten = card.getAttribute('data-ten');
+        if (ten.includes(filter)) {
+            card.style.display = '';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
+window.onload = () => {
+    loadGiaiDau();
+
+    // Gán sự kiện cho ô tìm kiếm
+    document.getElementById('searchInput').addEventListener('input', searchGiaiDau);
+};
+
+    </script>
+</body>
+</html>

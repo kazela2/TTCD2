@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tạo Đội Tuyển</title>
+    <link rel="stylesheet" href="/giaodien/taodoituyen.css">
+</head>
+<body>
+    <div class="header">
+        <div class="logo">🎮</div>
+        <div class="nav">
+          <a href="index.html">Trang chủ</a>
+          <a href="giaidau.html">Giải đấu</a>
+          <div class="dropdown">
+            <a href="#">Đội thi đấu ▾</a>
+            <div class="dropdown-content">
+              <a href="timdoituyen.html">Tìm đội tuyển</a>
+              <a href="taodoituyen.html">Tạo đội tuyển</a>
+            </div>
+          </div>
+          <a href="trandau.html">Trận Đấu</a>
+          <a href="xephang.html">Bảng Xếp Hạng</a>
+          <a href="lichsugiaidau.html">Lịch Sử Đấu</a>
+        </div>
+    </div>
+    <div class="form-container">
+    <h2>Tạo Đội Tuyển</h2>
+    <form id="form-tao-doi" autocomplete="off">
+  <div class="form-group">
+    <label for="tenDoi">Tên đội:</label>
+    <input type="text" id="tenDoi" name="tenDoi" required />
+  </div>
+  <div class="form-group">
+    <label for="tenHLV">Tên huấn luyện viên:</label>
+    <input type="text" id="tenHLV" name="tenHLV" required />
+  </div>
+  <div class="form-group">
+    <label for="selectGiaiDau">Giải đấu:</label>
+    <select id="selectGiaiDau" name="selectGiaiDau" required>
+      <!-- JS sẽ load danh sách giải đấu ở đây -->
+    </select>
+  </div>
+
+      <div class="members-container" id="membersContainer">
+    <h3>Thành viên</h3>
+    <div class="member-block">
+      <div class="form-group">
+        <label>Họ tên:</label>
+        <input type="text" name="hoTen[]" required />
+      </div>
+      <div class="form-group">
+        <label>Vị trí:</label>
+        <input type="text" name="viTri[]" />
+      </div>
+      <div class="form-group">
+        <label>Số áo:</label>
+        <input type="number" name="soAo[]" />
+      </div>
+    </div>
+  </div>
+
+  <button type="button" class="add-btn" onclick="addMember()">+ Thêm thành viên</button>
+  <hr />
+  <button type="submit" class="submit-btn">Tạo đội tuyển</button>
+</form>
+
+<script>
+  // Load danh sách giải đấu vào select
+  async function loadGiaiDau() {
+    try {
+      const res = await fetch('http://127.0.0.1:5000/GiaiDau/GetAll');
+      const giaiDauList = await res.json();
+      const select = document.getElementById('selectGiaiDau');
+      giaiDauList.forEach(giai => {
+        const option = document.createElement('option');
+        option.value = giai.IdGiai;
+        option.textContent = giai.TenGiai;
+        select.appendChild(option);
+      });
+    } catch (error) {
+      console.error('Lỗi load giải đấu:', error);
+    }
+  }
+  window.onload = loadGiaiDau;
+
+  function addMember() {
+    const container = document.getElementById('membersContainer');
+    const memberHTML = `
+      <div class="member-block">
+        <div class="form-group">
+          <label>Họ tên:</label>
+          <input type="text" name="hoTen[]" required />
+        </div>
+        <div class="form-group">
+          <label>Vị trí:</label>
+          <input type="text" name="viTri[]" />
+        </div>
+        <div class="form-group">
+          <label>Số áo:</label>
+          <input type="number" name="soAo[]" />
+        </div>
+      </div>`;
+    container.insertAdjacentHTML('beforeend', memberHTML);
+  }
+
+  // Xử lý submit form
+  document.getElementById('form-tao-doi').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const tenDoi = document.getElementById('tenDoi').value.trim();
+    const tenHLV = document.getElementById('tenHLV').value.trim();
+    const idGiai = document.getElementById('selectGiaiDau').value;
+
+    // Lấy thành viên
+    const hoTens = [...document.getElementsByName('hoTen[]')].map(i => i.value.trim());
+    const viTris = [...document.getElementsByName('viTri[]')].map(i => i.value.trim());
+    const soAos = [...document.getElementsByName('soAo[]')].map(i => i.value.trim());
+
+    const thanhVienList = hoTens.map((hoTen, idx) => ({
+      HoTen: hoTen,
+      ViTri: viTris[idx] || null,
+      SoAo: soAos[idx] ? Number(soAos[idx]) : null
+    }));
+
+    const data = {
+      TenDoi: tenDoi,
+      TenHuanLuyenVien: tenHLV,
+      IdGiai: Number(idGiai),
+      ThanhVien: thanhVienList
+    };
+
+    try {
+      const res = await fetch('http://127.0.0.1:5000/DoiThiDau/AddFull', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const result = await res.json();
+
+      if (res.ok) {
+        alert('Tạo đội tuyển thành công!');
+        this.reset();
+        // Xóa các thành viên ngoài thành viên đầu tiên
+        const membersContainer = document.getElementById('membersContainer');
+        membersContainer.innerHTML = `<h3>Thành viên</h3>
+          <div class="member-block">
+            <div class="form-group">
+              <label>Họ tên:</label>
+              <input type="text" name="hoTen[]" required />
+            </div>
+            <div class="form-group">
+              <label>Vị trí:</label>
+              <input type="text" name="viTri[]" />
+            </div>
+            <div class="form-group">
+              <label>Số áo:</label>
+              <input type="number" name="soAo[]" />
+            </div>
+          </div>`;
+      } else {
+        alert('Lỗi: ' + result.error);
+      }
+    } catch (error) {
+      alert('Lỗi gửi dữ liệu: ' + error.message);
+    }
+  });
+</script>
+</body>
+</html>
