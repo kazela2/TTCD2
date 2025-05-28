@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chọn Giải Đấu Và Đội Thi Đấu</title>
+    <link rel="stylesheet" href="trandau.css" />
+</head>
+<body>
+    <div class="header">
+        <div class="logo">🎮</div>
+        <div class="nav">
+            <a href="index.html">Trang chủ</a>
+            <a href="giaidau.html">Giải đấu</a>
+            <div class="dropdown">
+                <a href="#">Đội thi đấu ▾</a>
+                <div class="dropdown-content">
+                    <a href="timdoituyen.html">Tìm đội tuyển</a>
+                    <a href="taodoituyen.html">Tạo đội tuyển</a>
+                </div>
+            </div>
+            <a href="trandau.html">Trận Đấu</a>
+            <a href="xephang.html">Bảng Xếp Hạng</a>
+            <a href="lichsugiaidau.html">Lịch Sử Đấu</a>
+            <a href="admin.html">Quản Lý</a>
+        </div>
+    </div>
+
+    <div class="create">
+        <button id="btnBatDau">Bắt Đầu Trận Đấu</button>
+
+        <div id="form-trandau" class="form-trandau" style="display:none;">
+            <label for="select-giaidau">Chọn Giải Đấu:</label>
+            <select id="select-giaidau">
+                <option value="">-- Chọn giải đấu --</option>
+            </select>
+
+            <div id="teams-container" style="margin-top: 15px; display:none;">
+                <h3>Đội tham gia:</h3>
+                <div id="teams-cards" class="teams-cards"></div>
+
+                <div class="form-group">
+                    <label for="input-tyso">Tỷ số:</label>
+                    <input type="text" id="input-tyso" placeholder="VD: 2-1" />
+                </div>
+                <div class="form-group">
+                    <label for="input-ngaythidau">Ngày thi đấu:</label>
+                    <input type="date" id="input-ngaythidau" />
+                </div>
+                <div class="form-group">
+                    <label for="input-diadiem">Địa điểm:</label>
+                    <input type="text" id="input-diadiem" placeholder="Nhập địa điểm" />
+                </div>
+
+                <button id="btn-create-trandau">Tạo Trận Đấu</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    document.getElementById('btnBatDau').addEventListener('click', () => {
+        const form = document.getElementById('form-trandau');
+        form.style.display = form.style.display === 'none' ? 'block' : 'none';
+
+        if (form.style.display === 'block') {
+            loadGiaiDau();
+        }
+    });
+
+    async function loadGiaiDau() {
+        try {
+            const res = await fetch('http://127.0.0.1:5000/GiaiDau/GetAll');
+            const data = await res.json();
+
+            const select = document.getElementById('select-giaidau');
+            select.innerHTML = '<option value="">-- Chọn giải đấu --</option>';
+
+            data.forEach(giai => {
+                const option = document.createElement('option');
+                option.value = giai.IdGiai;
+                option.textContent = giai.TenGiai;
+                select.appendChild(option);
+            });
+        } catch (error) {
+            alert('Lỗi tải danh sách giải đấu: ' + error.message);
+        }
+    }
+
+    document.getElementById('select-giaidau').addEventListener('change', async function() {
+        const idGiai = this.value;
+        if (!idGiai) {
+            document.getElementById('teams-container').style.display = 'none';
+            return;
+        }
+
+        try {
+            const res = await fetch(`http://127.0.0.1:5000/DoiThiDau/GetByGiai/${idGiai}`);
+            const teams = await res.json();
+
+            if (teams.length < 2) {
+                alert('Giải đấu này chưa có đủ 2 đội thi đấu.');
+                document.getElementById('teams-container').style.display = 'none';
+                return;
+            }
+
+            const container = document.getElementById('teams-cards');
+            container.innerHTML = '';
+
+            // Chỉ lấy 2 đội đầu tiên
+            for (let i = 0; i < 2; i++) {
+                const team = teams[i];
+                const div = document.createElement('div');
+                div.style.border = '1px solid #ccc';
+                div.style.padding = '10px';
+                div.style.width = '200px';
+                div.setAttribute('data-id', team.IdDoi); // Lưu IdDoi ở đây để dùng sau
+                div.innerHTML = `
+                    <h4>${team.TenDoi}</h4>
+                    <p><strong>HLV:</strong> ${team.TenHuanLuyenVien || 'Chưa có'}</p>
+                `;
+                container.appendChild(div);
+            }
+
+            document.getElementById('teams-container').style.display = 'block';
+
+        } catch (error) {
+            alert('Lỗi tải đội thi đấu: ' + error.message);
+            document.getElementById('teams-container').style.display = 'none';
+        }
+    });
+
+    document.getElementById('btn-create-trandau').addEventListener('click', async () => {
+        const idGiai = document.getElementById('select-giaidau').value;
+        const container = document.getElementById('teams-cards');
+        const teams = container.children;
+        if (!idGiai || teams.length < 2) {
+            alert('Bạn phải chọn giải đấu và đảm bảo có 2 đội.');
+            return;
+        }
+
+        const Doi1Id = teams[0].getAttribute('data-id');
+        const Doi2Id = teams[1].getAttribute('data-id');
+
+        const TySo = document.getElementById('input-tyso').value.trim();
+        const NgayThiDau = document.getElementById('input-ngaythidau').value;
+        const DiaDiem = document.getElementById('input-diadiem').value.trim();
+
+        if (!TySo || !NgayThiDau || !DiaDiem) {
+            alert('Vui lòng nhập đầy đủ Tỷ số, Ngày thi đấu và Địa điểm.');
+            return;
+        }
+
+        try {
+            const res = await fetch('http://127.0.0.1:5000/TranDau/Add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    IdGiai: idGiai,
+                    Doi1: Doi1Id,
+                    Doi2: Doi2Id,
+                    TySo,
+                    NgayThiDau,
+                    DiaDiem
+                })
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                alert('Tạo trận đấu thành công!');
+                document.getElementById('form-trandau').style.display = 'none';
+                // Bạn có thể gọi lại hàm loadTranDau() ở trang trận đấu nếu cần
+            } else {
+                alert('Lỗi: ' + (data.error || 'Không rõ lỗi'));
+            }
+        } catch (error) {
+            alert('Lỗi khi tạo trận đấu: ' + error.message);
+        }
+    });
+</script>
+</body>
+</html>

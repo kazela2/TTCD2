@@ -64,6 +64,23 @@ def tao_giai_dau():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/GiaiDau/Delete/<int:id_giai>', methods=['DELETE'])
+def xoa_giai_dau(id_giai):
+    try:
+        cursor = con.cursor()
+        # Kiểm tra xem giải đấu có tồn tại không
+        cursor.execute("SELECT COUNT(*) FROM GiaiDau WHERE IdGiai = ?", (id_giai,))
+        count = cursor.fetchone()[0]
+        if count == 0:
+            return jsonify({'error': 'Giải đấu không tồn tại'}), 404
+
+        # Xóa giải đấu
+        cursor.execute("DELETE FROM GiaiDau WHERE IdGiai = ?", (id_giai,))
+        con.commit()
+        cursor.close()
+        return jsonify({'message': 'Xóa giải đấu thành công'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 # Lấy danh sách đội thi đấu kèm tên giải đấu
@@ -149,7 +166,8 @@ def add_doi_va_thanhvien():
         return jsonify({'error': str(e)}), 500
 
 
-    
+
+
 # === CHẠY APP ===
 if __name__ == '__main__':
     if con:

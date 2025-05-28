@@ -1,4 +1,4 @@
-CREATE DATABASE QL_GIAIDAUONLINE
+﻿CREATE DATABASE QL_GIAIDAUONLINE
 USE QL_GIAIDAUONLINE
 
 -- B?ng GiaiDau
@@ -16,8 +16,9 @@ CREATE TABLE DoiThiDau (
     TenDoi VARCHAR(100) NOT NULL,
     TenHuanLuyenVien VARCHAR(100),
     IdGiai INT NULL,
-    FOREIGN KEY (IdGiai) REFERENCES GiaiDau(IdGiai)
+    FOREIGN KEY (IdGiai) REFERENCES GiaiDau(IdGiai) ON DELETE CASCADE
 );
+
 
 -- B?ng ThanhVienDoi
 CREATE TABLE ThanhVienDoi (
@@ -26,8 +27,9 @@ CREATE TABLE ThanhVienDoi (
     ViTri VARCHAR(50),
     SoAo INT,
     IdDoi INT,
-    FOREIGN KEY (IdDoi) REFERENCES DoiThiDau(IdDoi)
+    FOREIGN KEY (IdDoi) REFERENCES DoiThiDau(IdDoi) ON DELETE CASCADE
 );
+
 
 -- B?ng TranDau
 CREATE TABLE TranDau (
@@ -42,7 +44,7 @@ CREATE TABLE TranDau (
     FOREIGN KEY (Doi1) REFERENCES DoiThiDau(IdDoi),
     FOREIGN KEY (Doi2) REFERENCES DoiThiDau(IdDoi)
 );
-
+select * from TranDau
 -- B?ng BangXepHang
 CREATE TABLE BangXepHang (
     Idxh INT PRIMARY KEY IDENTITY(1,1),
@@ -88,3 +90,12 @@ CREATE TABLE GiaiThuong (
     FOREIGN KEY (IdGiai) REFERENCES GiaiDau(IdGiai),
     FOREIGN KEY (DoiNhan) REFERENCES DoiThiDau(IdDoi)
 );
+
+
+INSERT INTO GiaiDau (TenGiai, NgayBatDau, NgayKetThuc, MoTa) VALUES
+('Giải Đấu Mùa Hè 2025', '2025-06-01', '2025-06-30', 'Giải đấu lớn diễn ra vào mùa hè năm 2025.'),
+('Giải Đấu Mùa Đông 2025', '2025-12-01', '2025-12-20', 'Giải đấu mùa đông với nhiều đội tuyển mạnh tham gia.');
+select * from GiaiDau
+select * from DoiThiDau
+select * from ThanhVienDoi
+

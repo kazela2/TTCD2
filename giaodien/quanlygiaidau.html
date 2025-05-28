@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Quản lý giải đấu</title>
+  <link rel="stylesheet" href="quanlygiaidau.css" />
+</head>
+<body>
+  <div class="sidebar">
+    <h2>Quản Trị</h2>
+    <a href="quanlygiaidau.html">📦 Quản lý Giải Đấu</a>
+    <a href="./quanlydoituyenvathanhvien.html">🧾 Quản lý Đội Tuyển và Thành Viên</a>
+    <a href="#">👥 Quản lý Trận Đấu</a>
+    <a href="#">📊 Quản Lý Bảng Xếp Hạng</a>
+    <a href="index.html">Quay Lại</a>
+  </div>
+
+  <div class="content">
+    <h2>Danh sách Giải Đấu</h2>
+    <table id="giaiTable">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Tên Giải</th>
+          <th>Ngày Bắt Đầu</th>
+          <th>Ngày Kết Thúc</th>
+          <th>Mô Tả</th>
+          <th>Hành động</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Dữ liệu sẽ được chèn ở đây bằng JavaScript -->
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    async function loadGiaiDau() {
+      try {
+        const res = await fetch("http://127.0.0.1:5000/GiaiDau/GetAll");
+        const data = await res.json();
+        const tbody = document.querySelector("#giaiTable tbody");
+        tbody.innerHTML = "";
+
+        data.forEach(giai => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${giai.IdGiai}</td>
+            <td>${giai.TenGiai}</td>
+            <td>${giai.NgayBatDau || ""}</td>
+            <td>${giai.NgayKetThuc || ""}</td>
+            <td>${giai.MoTa || ""}</td>
+            <td><button onclick="xoaGiaiDau(${giai.IdGiai})" >Xoá</button></td>
+          `;
+          tbody.appendChild(row);
+        });
+      } catch (error) {
+        console.error("Lỗi khi tải giải đấu:", error);
+      }
+    }
+
+    async function xoaGiaiDau(id) {
+      if (confirm("Bạn có chắc muốn xoá giải đấu này không?")) {
+        try {
+          const res = await fetch(`http://127.0.0.1:5000/GiaiDau/Delete/${id}`, {
+            method: "DELETE"
+          });
+          const result = await res.json();
+          if (res.ok) {
+            alert(result.message || "Xoá thành công!");
+            loadGiaiDau(); // Tải lại danh sách sau khi xoá
+          } else {
+            alert(result.error || "Có lỗi xảy ra khi xoá!");
+          }
+        } catch (error) {
+          console.error("Lỗi khi gọi API xoá:", error);
+        }
+      }
+    }
+
+    window.onload = loadGiaiDau;
+  </script>
+</body>
+</html>
