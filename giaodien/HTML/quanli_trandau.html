@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Trận Đấu</title>
+    <link rel="stylesheet" href="/giaodien/CSS/quanli_trandau.css">
+</head>
+<body>
+  <div class="sidebar">
+    <h2>Quản Trị</h2>
+    <a href="quanlygiaidau.html">📦 Quản lý Giải Đấu</a>
+    <a href="./quanlydoituyenvathanhvien.html">🧾 Quản lý Đội Tuyển và Thành Viên</a>
+    <a href="/giaodien/HTML/quanli_trandau.html">👥 Quản lý Trận Đấu</a>
+    <a href="#">📊 Quản Lý Bảng Xếp Hạng</a>
+    <a href="index.html">Quay Lại</a>
+  </div>
+
+
+  <div class="main-content">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1 class="page-title">⚽ Quản Lý Trận Đấu</h1>
+        <p class="page-subtitle">Thêm, sửa, xóa và quản lý các trận đấu trong hệ thống</p>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div id="successMessage" class="success-message" style="display: none;"></div>
+    <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+    <!-- Add Match Section -->
+    <div class="add-section">
+        <h3 class="section-title">➕ Thêm Trận Đấu Mới</h3>
+        <form id="addMatchForm">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="idGiai">Giải Đấu *</label>
+                    <select id="idGiai" name="IdGiai" required>
+                        <option value="">Chọn giải đấu</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="doi1">Đội 1 *</label>
+                    <select id="doi1" name="Doi1" required>
+                        <option value="">Chọn đội 1</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="doi2">Đội 2 *</label>
+                    <select id="doi2" name="Doi2" required>
+                        <option value="">Chọn đội 2</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="ngayThiDau">Ngày Thi Đấu</label>
+                    <input type="date" id="ngayThiDau" name="NgayThiDau">
+                </div>
+                <div class="form-group">
+                    <label for="diaDiem">Địa Điểm</label>
+                    <input type="text" id="diaDiem" name="DiaDiem" placeholder="Nhập địa điểm thi đấu">
+                </div>
+                <div class="form-group">
+                    <label for="tySo">Tỷ Số</label>
+                    <input type="text" id="tySo" name="TySo" placeholder="Ví dụ: 2-1">
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">
+                ➕ Thêm Trận Đấu
+            </button>
+        </form>
+    </div>
+
+    <!-- Matches Table Section -->
+    <div class="table-section">
+        <div class="table-header">
+            <h3 class="section-title">📋 Danh Sách Trận Đấu</h3>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Tìm kiếm trận đấu...">
+                <select id="tournamentFilter">
+                    <option value="">Tất cả giải đấu</option>
+                </select>
+                <button class="btn btn-primary" onclick="loadMatches()">🔄 Làm mới</button>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div id="loading" class="loading">
+            🔄 Đang tải dữ liệu...
+        </div>
+
+        <!-- Matches Table -->
+        <div id="tableContainer" style="display: none;">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Giải Đấu</th>
+                        <th>Đội 1</th>
+                        <th>Đội 2</th>
+                        <th>Tỷ Số</th>
+                        <th>Ngày Thi Đấu</th>
+                        <th>Địa Điểm</th>
+                        <th>Trạng Thái</th>
+                        <th>Thao Tác</th>
+                    </tr>
+                </thead>
+                <tbody id="matchesTableBody">
+                    <!-- Data will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- No Data -->
+        <div id="noData" class="no-data" style="display: none;">
+            <p>📭 Chưa có trận đấu nào trong hệ thống</p>
+        </div>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div id="editModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">✏️ Chỉnh Sửa Trận Đấu</h3>
+            <span class="close" onclick="closeEditModal()">&times;</span>
+        </div>
+        <form id="editMatchForm">
+            <input type="hidden" id="editIdTran" name="IdTran">
+            
+            <div class="form-group">
+                <label for="editTySo">Tỷ Số</label>
+                <input type="text" id="editTySo" name="TySo" placeholder="Ví dụ: 2-1">
+            </div>
+            
+            <div class="form-group">
+                <label for="editNgayThiDau">Ngày Thi Đấu</label>
+                <input type="date" id="editNgayThiDau" name="NgayThiDau">
+            </div>
+            
+            <div class="form-group">
+                <label for="editDiaDiem">Địa Điểm</label>
+                <input type="text" id="editDiaDiem" name="DiaDiem" placeholder="Nhập địa điểm thi đấu">
+            </div>
+            
+            <div class="form-row">
+                <button type="submit" class="btn btn-success">💾 Lưu Thay Đổi</button>
+                <button type="button" class="btn btn-secondary" onclick="closeEditModal()">❌ Hủy</button>
+            </div>
+        </form>
+    </div>
+  </div>
+
+  <script>
+    // API Configuration
+    const API_BASE = 'http://localhost:5000';
+    
+    // Global variables
+    let allMatches = [];
+    let tournaments = [];
+    let teams = [];
+
+    // DOM Elements
+    const loading = document.getElementById('loading');
+    const tableContainer = document.getElementById('tableContainer');
+    const noData = document.getElementById('noData');
+    const matchesTableBody = document.getElementById('matchesTableBody');
+    const successMessage = document.getElementById('successMessage');
+    const errorMessage = document.getElementById('errorMessage');
+
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', function() {
+        loadTournaments();
+        loadMatches();
+        
+        // Event listeners
+        document.getElementById('addMatchForm').addEventListener('submit', handleAddMatch);
+        document.getElementById('editMatchForm').addEventListener('submit', handleEditMatch);
+        document.getElementById('idGiai').addEventListener('change', loadTeamsByTournament);
+        document.getElementById('searchInput').addEventListener('input', filterMatches);
+        document.getElementById('tournamentFilter').addEventListener('change', filterMatches);
+    });
+
+    // Load tournaments
+    async function loadTournaments() {
+        try {
+            const response = await fetch(`${API_BASE}/GiaiDau/GetAll`);
+            tournaments = await response.json();
+            
+            const selects = ['idGiai', 'tournamentFilter'];
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                // Clear existing options except first one
+                while(select.children.length > 1) {
+                    select.removeChild(select.lastChild);
+                }
+                
+                tournaments.forEach(tournament => {
+                    const option = document.createElement('option');
+                    option.value = tournament.IdGiai;
+                    option.textContent = tournament.TenGiai;
+                    select.appendChild(option);
+                });
+            });
+        } catch (error) {
+            console.error('Error loading tournaments:', error);
+        }
+    }
+
+    // Load teams by tournament
+    async function loadTeamsByTournament() {
+        const tournamentId = document.getElementById('idGiai').value;
+        const doi1Select = document.getElementById('doi1');
+        const doi2Select = document.getElementById('doi2');
+        
+        // Clear team selects
+        doi1Select.innerHTML = '<option value="">Chọn đội 1</option>';
+        doi2Select.innerHTML = '<option value="">Chọn đội 2</option>';
+        
+        if (!tournamentId) return;
+        
+        try {
+            const response = await fetch(`${API_BASE}/DoiThiDau/GetByGiai/${tournamentId}`);
+            const teams = await response.json();
+            
+            teams.forEach(team => {
+                const option1 = document.createElement('option');
+                option1.value = team.IdDoi;
+                option1.textContent = team.TenDoi;
+                doi1Select.appendChild(option1);
+                
+                const option2 = document.createElement('option');
+                option2.value = team.IdDoi;
+                option2.textContent = team.TenDoi;
+                doi2Select.appendChild(option2);
+            });
+        } catch (error) {
+            console.error('Error loading teams:', error);
+        }
+    }
+
+    // Load matches
+    async function loadMatches() {
+        showLoading();
+        try {
+            const response = await fetch(`${API_BASE}/TranDau/GetAll`);
+            if (!response.ok) throw new Error('Failed to fetch matches');
+            
+            allMatches = await response.json();
+            renderMatches(allMatches);
+            hideLoading();
+        } catch (error) {
+            console.error('Error loading matches:', error);
+            showError('Không thể tải danh sách trận đấu');
+            hideLoading();
+        }
+    }
+
+    // Render matches table
+    function renderMatches(matches) {
+        if (matches.length === 0) {
+            tableContainer.style.display = 'none';
+            noData.style.display = 'block';
+            return;
+        }
+
+        noData.style.display = 'none';
+        tableContainer.style.display = 'block';
+        
+        matchesTableBody.innerHTML = matches.map(match => `
+            <tr>
+                <td>${match.IdTran}</td>
+                <td>${match.TenGiai || 'N/A'}</td>
+                <td>${match.TenDoi1 || 'N/A'}</td>
+                <td>${match.TenDoi2 || 'N/A'}</td>
+                <td><strong>${match.TySo || 'Chưa thi đấu'}</strong></td>
+                <td>${formatDate(match.NgayThiDau)}</td>
+                <td>${match.DiaDiem || 'Chưa xác định'}</td>
+                <td>${getStatusBadge(match)}</td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn btn-warning btn-sm" onclick="editMatch(${match.IdTran})">
+                            ✏️ Sửa
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteMatch(${match.IdTran})">
+                            🗑️ Xóa
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // Handle add match
+    async function handleAddMatch(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData);
+        
+        // Validation
+        if (data.Doi1 === data.Doi2) {
+            showError('Hai đội không thể giống nhau!');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`${API_BASE}/TranDau/Add`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                showSuccess('Thêm trận đấu thành công!');
+                e.target.reset();
+                loadMatches();
+            } else {
+                showError(result.error || 'Có lỗi xảy ra');
+            }
+        } catch (error) {
+            console.error('Error adding match:', error);
+            showError('Không thể thêm trận đấu');
+        }
+    }
+
+    // Edit match
+    function editMatch(idTran) {
+        const match = allMatches.find(m => m.IdTran === idTran);
+        if (!match) return;
+        
+        document.getElementById('editIdTran').value = match.IdTran;
+        document.getElementById('editTySo').value = match.TySo || '';
+        document.getElementById('editNgayThiDau').value = match.NgayThiDau || '';
+        document.getElementById('editDiaDiem').value = match.DiaDiem || '';
+        
+        document.getElementById('editModal').style.display = 'block';
+    }
+
+
+    async function handleEditMatch(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData);
+        const idTran = data.IdTran;
+        
+        try {
+            const response = await fetch(`${API_BASE}/TranDau/Update/${idTran}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                showSuccess('Cập nhật trận đấu thành công!');
+                closeEditModal();
+                loadMatches();
+            } else {
+                showError(result.error || 'Có lỗi xảy ra');
+            }
+        } catch (error) {
+            console.error('Error updating match:', error);
+            showError('Không thể cập nhật trận đấu');
+        }
+    }
+
+    // Delete match
+    async function deleteMatch(idTran) {
+        if (!confirm('Bạn có chắc chắn muốn xóa trận đấu này?')) return;
+        
+        try {
+            const response = await fetch(`${API_BASE}/TranDau/Delete/${idTran}`, {
+                method: 'DELETE'
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                showSuccess('Xóa trận đấu thành công!');
+                loadMatches();
+            } else {
+                showError(result.error || 'Có lỗi xảy ra');
+            }
+        } catch (error) {
+            console.error('Error deleting match:', error);
+            showError('Không thể xóa trận đấu');
+        }
+    }
+
+
+    function filterMatches() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const tournamentFilter = document.getElementById('tournamentFilter').value;
+        
+        let filteredMatches = allMatches;
+        
+        if (tournamentFilter) {
+            filteredMatches = filteredMatches.filter(match => 
+                match.IdGiai == tournamentFilter
+            );
+        }
+        
+        if (searchTerm) {
+            filteredMatches = filteredMatches.filter(match => 
+                (match.TenGiai && match.TenGiai.toLowerCase().includes(searchTerm)) ||
+                (match.TenDoi1 && match.TenDoi1.toLowerCase().includes(searchTerm)) ||
+                (match.TenDoi2 && match.TenDoi2.toLowerCase().includes(searchTerm)) ||
+                (match.DiaDiem && match.DiaDiem.toLowerCase().includes(searchTerm))
+            );
+        }
+        
+        renderMatches(filteredMatches);
+    }
+
+
+    function formatDate(dateString) {
+        if (!dateString) return 'Chưa xác định';
+        return new Date(dateString).toLocaleDateString('vi-VN');
+    }
+
+    function getStatusBadge(match) {
+        if (match.TySo && match.TySo.trim() !== '') {
+            return '<span class="status-badge status-completed">Đã kết thúc</span>';
+        } else {
+            return '<span class="status-badge status-upcoming">Sắp diễn ra</span>';
+        }
+    }
+
+    function showLoading() {
+        loading.style.display = 'block';
+        tableContainer.style.display = 'none';
+        noData.style.display = 'none';
+    }
+
+    function hideLoading() {
+        loading.style.display = 'none';
+    }
+
+    function showSuccess(message) {
+        successMessage.textContent = message;
+        successMessage.style.display = 'block';
+        errorMessage.style.display = 'none';
+        setTimeout(() => {
+            successMessage.style.display = 'none';
+        }, 5000);
+    }
+
+    function showError(message) {
+        errorMessage.textContent = message;
+        errorMessage.style.display = 'block';
+        successMessage.style.display = 'none';
+        setTimeout(() => {
+            errorMessage.style.display = 'none';
+        }, 5000);
+    }
+
+    function closeEditModal() {
+        document.getElementById('editModal').style.display = 'none';
+    }
+
+    window.onclick = function(event) {
+        const modal = document.getElementById('editModal');
+        if (event.target === modal) {
+            closeEditModal();
+        }
+    }
+  </script>
+</body>
+</html>

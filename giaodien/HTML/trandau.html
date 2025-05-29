@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trận Đấu</title>
+    <link rel="stylesheet" href="/giaodien/CSS/trandau.css">
+</head>
+<body>
+    <div class="header">
+        <div class="logo">🎮</div>
+        <div class="nav">
+          <a href="index.html">Trang chủ</a>
+          <a href="giaidau.html">Giải đấu</a>
+          <div class="dropdown">
+            <a href="#">Đội thi đấu ▾</a>
+            <div class="dropdown-content">
+              <a href="timdoituyen.html">Tìm đội tuyển</a>
+              <a href="taodoituyen.html">Tạo đội tuyển</a>
+            </div>
+          </div>
+          <a href="trandau.html">Trận Đấu</a>
+          <a href="xephang.html">Bảng Xếp Hạng</a>
+          <a href="lichsugiaidau.html">Lịch Sử Đấu</a>
+          <a href="admin.html">Quản Lý</a>
+        </div>
+    </div>
+
+
+    <div class="container">
+        <h1 class="page-title">📅 Lịch Trận Đấu</h1>
+        
+        <!-- Bộ lọc -->
+        <div class="filter-section">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="tournamentFilter">Lọc theo giải đấu:</label>
+                    <select id="tournamentFilter">
+                        <option value="">Tất cả giải đấu</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="statusFilter">Trạng thái:</label>
+                    <select id="statusFilter">
+                        <option value="">Tất cả</option>
+                        <option value="finished">Đã kết thúc</option>
+                        <option value="upcoming">Sắp diễn ra</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div id="loading" class="loading">
+            🔄 Đang tải dữ liệu...
+        </div>
+
+        <!-- Error -->
+        <div id="error" class="error" style="display: none;">
+            ❌ Có lỗi xảy ra khi tải dữ liệu!
+        </div>
+
+        <!-- Danh sách trận đấu -->
+        <div id="matchesContainer" class="matches-grid" style="display: none;">
+            <!-- Các trận đấu sẽ được render ở đây -->
+        </div>
+
+        <!-- Không có trận đấu -->
+        <div id="noMatches" class="no-matches" style="display: none;">
+            <div class="no-matches-icon">⚽</div>
+            <h3>Chưa có trận đấu nào</h3>
+            <p>Hiện tại chưa có trận đấu nào được lên lịch.</p>
+        </div>
+    </div>
+
+    <script>
+        // URL API
+        const API_BASE = 'http://localhost:5000';
+        
+        // Global variables
+        let allMatches = [];
+        let tournaments = [];
+
+        // DOM elements
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const matchesContainer = document.getElementById('matchesContainer');
+        const noMatches = document.getElementById('noMatches');
+        const tournamentFilter = document.getElementById('tournamentFilter');
+        const statusFilter = document.getElementById('statusFilter');
+
+        // Fetch data khi trang load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTournaments();
+            loadMatches();
+            
+            // Event listeners cho filter
+            tournamentFilter.addEventListener('change', filterMatches);
+            statusFilter.addEventListener('change', filterMatches);
+        });
+
+        // Load danh sách giải đấu cho filter
+        async function loadTournaments() {
+            try {
+                const response = await fetch(`${API_BASE}/GiaiDau/GetAll`);
+                tournaments = await response.json();
+                
+                // Populate tournament filter
+                tournaments.forEach(tournament => {
+                    const option = document.createElement('option');
+                    option.value = tournament.IdGiai;
+                    option.textContent = tournament.TenGiai;
+                    tournamentFilter.appendChild(option);
+                });
+            } catch (err) {
+                console.error('Error loading tournaments:', err);
+            }
+        }
+
+        // Load danh sách trận đấu
+        async function loadMatches() {
+            try {
+                showLoading();
+                
+                const response = await fetch(`${API_BASE}/TranDau/GetAll`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch matches');
+                }
+                
+                allMatches = await response.json();
+                renderMatches(allMatches);
+                hideLoading();
+                
+            } catch (err) {
+                console.error('Error loading matches:', err);
+                showError();
+            }
+        }
+
+        // Render danh sách trận đấu
+        function renderMatches(matches) {
+            if (matches.length === 0) {
+                showNoMatches();
+                return;
+            }
+
+            matchesContainer.style.display = 'grid';
+            noMatches.style.display = 'none';
+            
+            matchesContainer.innerHTML = matches.map(match => `
+                <div class="match-card">
+                    <div class="match-header">
+                        <div class="tournament-name">${match.TenGiai || 'Giải đấu'}</div>
+                        <div class="match-date">${formatDate(match.NgayThiDau)}</div>
+                    </div>
+                    
+                    <div class="teams-container">
+                        <div class="team">
+                            <div class="team-logo">🏆</div>
+                            <div class="team-name">${match.TenDoi1 || 'Đội 1'}</div>
+                        </div>
+                        
+                        <div class="vs">VS</div>
+                        
+                        <div class="team">
+                            <div class="team-logo">🏆</div>
+                            <div class="team-name">${match.TenDoi2 || 'Đội 2'}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="score ${match.TySo ? '' : 'no-score'}">
+                        ${match.TySo || 'Chưa thi đấu'}
+                    </div>
+                    
+                    <div class="match-info">
+                        <div class="venue">
+                            📍 ${match.DiaDiem || 'Chưa xác định'}
+                        </div>
+                        <div class="match-status">
+                            ${getMatchStatus(match)}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Filter trận đấu
+        function filterMatches() {
+            const tournamentId = tournamentFilter.value;
+            const status = statusFilter.value;
+            
+            let filteredMatches = allMatches;
+            
+            // Filter theo giải đấu
+            if (tournamentId) {
+                filteredMatches = filteredMatches.filter(match => 
+                    match.IdGiai == tournamentId
+                );
+            }
+            
+            // Filter theo trạng thái
+            if (status) {
+                filteredMatches = filteredMatches.filter(match => {
+                    if (status === 'finished') {
+                        return match.TySo && match.TySo.trim() !== '';
+                    } else if (status === 'upcoming') {
+                        return !match.TySo || match.TySo.trim() === '';
+                    }
+                    return true;
+                });
+            }
+            
+            renderMatches(filteredMatches);
+        }
+
+        // Utility functions
+        function formatDate(dateString) {
+            if (!dateString) return 'Chưa xác định';
+            
+            const date = new Date(dateString);
+            return date.toLocaleDateString('vi-VN', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+
+        function getMatchStatus(match) {
+            if (match.TySo && match.TySo.trim() !== '') {
+                return '✅ Đã kết thúc';
+            } else {
+                return '⏰ Sắp diễn ra';
+            }
+        }
+
+        function showLoading() {
+            loading.style.display = 'block';
+            error.style.display = 'none';
+            matchesContainer.style.display = 'none';
+            noMatches.style.display = 'none';
+        }
+
+        function hideLoading() {
+            loading.style.display = 'none';
+        }
+
+        function showError() {
+            loading.style.display = 'none';
+            error.style.display = 'block';
+            matchesContainer.style.display = 'none';
+            noMatches.style.display = 'none';
+        }
+
+        function showNoMatches() {
+            loading.style.display = 'none';
+            error.style.display = 'none';
+            matchesContainer.style.display = 'none';
+            noMatches.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

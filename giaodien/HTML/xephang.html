@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng Xếp Hạng</title>
+    <link rel="stylesheet" href="/giaodien/CSS/xephang.css">
+</head>
+<body>
+    <div class="header">
+        <div class="logo">🎮</div>
+        <div class="nav">
+          <a href="index.html">Trang chủ</a>
+          <a href="giaidau.html">Giải đấu</a>
+          <div class="dropdown">
+            <a href="#">Đội thi đấu ▾</a>
+            <div class="dropdown-content">
+              <a href="timdoituyen.html">Tìm đội tuyển</a>
+              <a href="taodoituyen.html">Tạo đội tuyển</a>
+            </div>
+          </div>
+          <a href="trandau.html">Trận Đấu</a>
+          <a href="xephang.html">Bảng Xếp Hạng</a>
+          <a href="lichsugiaidau.html">Lịch Sử Đấu</a>
+          <a href="admin.html">Quản Lý</a>
+        </div>
+    </div>
+
+    <div class="container">
+    <h2>Bảng Xếp Hạng</h2>
+    <div class="ranking-grid" id="rankingGrid">
+        <!-- Dữ liệu sẽ được load tại đây -->
+    </div>
+</div>
+
+<script>
+fetch('http://localhost:5000/BangXepHang/GetAll')
+  .then(response => response.json())
+  .then(data => {
+    const grid = document.getElementById('rankingGrid');
+    data.forEach((item, index) => {
+      const card = document.createElement('div');
+      card.className = 'ranking-card';
+      card.innerHTML = `
+        <div class="rank">#${index + 1}</div>
+        <div><strong>Đội:</strong> ${item.TenDoi || item.IdDoi}</div>
+        <div><strong>Giải:</strong> ${item.TenGiai || item.IdGiai}</div>
+        <div><strong>Trận:</strong> ${item.SoTran}</div>
+        <div><strong>Thắng:</strong> ${item.SoTranThang}</div>
+        <div><strong>Hòa:</strong> ${item.SoTranHoa}</div>
+        <div><strong>Thua:</strong> ${item.SoTranThua}</div>
+        <div><strong>Hiệu số:</strong> ${item.HieuSo}</div>
+        <div><strong>Điểm:</strong> ${item.Diem}</div>
+      `;
+      grid.appendChild(card);
+    });
+  })
+  .catch(error => console.error('Lỗi khi load dữ liệu:', error));
+</script>
+
+</body>
+</html>
