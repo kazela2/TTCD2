@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tạo Đội Tuyển</title>
+    <link rel="stylesheet" href="/CSS/taodoituyen.css">
+</head>
+<body>
+    <div class="header">
+        <div class="logo">🎮</div>
+        <div class="nav">
+            <a href="index.html">Trang chủ</a>
+            <a href="giaidau.html">Giải đấu</a>
+            <div class="dropdown">
+                <a href="#">Đội thi đấu ▾</a>
+                <div class="dropdown-content">
+                    <a href="timdoituyen.html">Tìm đội tuyển</a>
+                    <a href="taodoituyen.html">Tạo đội tuyển</a>
+                </div>
+            </div>
+            <a href="trandau.html">Trận Đấu</a>
+            <a href="xephang.html">Bảng Xếp Hạng</a>
+            <a href="lichsugiaidau.html">Lịch Sử Đấu</a>
+            <a href="admin.html">Quản Lý</a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="form-container">
+            <div class="form-header">
+                <div class="form-icon">⚡</div>
+                <h2>Tạo Đội Tuyển</h2>
+                <p class="form-subtitle">Xây dựng đội tuyển esports chuyên nghiệp của bạn</p>
+            </div>
+
+            <form id="form-tao-doi" autocomplete="off">
+                <!-- Team Information -->
+                <div class="section">
+                    <div class="section-header">
+                        <h3>
+                            <span class="section-icon">🛡️</span>
+                            Thông Tin Đội Tuyển
+                        </h3>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="tenDoi">
+                                <span class="label-icon">🏆</span>
+                                Tên Đội
+                            </label>
+                            <input type="text" id="tenDoi" name="tenDoi" 
+                                   placeholder="Nhập tên đội tuyển..." required />
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="tenHLV">
+                                <span class="label-icon">👨‍💼</span>
+                                Huấn Luyện Viên
+                            </label>
+                            <input type="text" id="tenHLV" name="tenHLV" 
+                                   placeholder="Tên huấn luyện viên..." required />
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label for="selectGiaiDau">
+                                <span class="label-icon">🎯</span>
+                                Giải Đấu
+                            </label>
+                            <div class="select-wrapper">
+                                <select id="selectGiaiDau" name="selectGiaiDau" required>
+                                    <option value="">Chọn giải đấu...</option>
+                                    <!-- JS sẽ load danh sách giải đấu ở đây -->
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Members Section -->
+                <div class="section">
+                    <div class="section-header">
+                        <h3>
+                            <span class="section-icon">👥</span>
+                            Thành Viên Đội Tuyển
+                        </h3>
+                        <button type="button" class="add-member-btn" onclick="addMember()">
+                            <span class="btn-icon">➕</span>
+                            Thêm Thành Viên
+                        </button>
+                    </div>
+
+                    <div class="members-container" id="membersContainer">
+                        <div class="member-card" id="member-1">
+                            <div class="member-header">
+                                <span class="member-number">Thành viên #1</span>
+                                <button type="button" class="remove-member-btn" onclick="removeMember(1)" style="display: none;">
+                                    <span>✕</span>
+                                </button>
+                            </div>
+                            <div class="member-form">
+                                <div class="form-group">
+                                    <label>
+                                        <span class="label-icon">👤</span>
+                                        Họ Tên
+                                    </label>
+                                    <input type="text" name="hoTen[]" placeholder="Nhập họ tên..." required />
+                                </div>
+                                <div class="form-group">
+                                    <label>
+                                        <span class="label-icon">⚔️</span>
+                                        Vị Trí
+                                    </label>
+                                    <input type="text" name="viTri[]" placeholder="VD: ADC, Support, Mid..." />
+                                </div>
+                                <div class="form-group">
+                                    <label>
+                                        <span class="label-icon">🔢</span>
+                                        Số Áo
+                                    </label>
+                                    <input type="number" name="soAo[]" placeholder="1-99" min="1" max="99" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="form-actions">
+                    <button type="button" class="btn-reset" onclick="resetForm()">
+                        <span class="btn-icon">🔄</span>
+                        Reset Form
+                    </button>
+                    <button type="submit" class="btn-submit">
+                        <span class="btn-icon">✨</span>
+                        Tạo Đội Tuyển
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let memberCount = 1;
+
+        // Load danh sách giải đấu vào select
+        async function loadGiaiDau() {
+            try {
+                const res = await fetch('http://127.0.0.1:5000/GiaiDau/GetAll');
+                const giaiDauList = await res.json();
+                const select = document.getElementById('selectGiaiDau');
+                
+                giaiDauList.forEach(giai => {
+                    const option = document.createElement('option');
+                    option.value = giai.IdGiai;
+                    option.textContent = giai.TenGiai;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Lỗi load giải đấu:', error);
+                alert('Không thể tải danh sách giải đấu. Vui lòng thử lại!');
+            }
+        }
+
+        function addMember() {
+            memberCount++;
+            const container = document.getElementById('membersContainer');
+            const memberHTML = `
+                <div class="member-card" id="member-${memberCount}">
+                    <div class="member-header">
+                        <span class="member-number">Thành viên #${memberCount}</span>
+                        <button type="button" class="remove-member-btn" onclick="removeMember(${memberCount})">
+                            <span>✕</span>
+                        </button>
+                    </div>
+                    <div class="member-form">
+                        <div class="form-group">
+                            <label>
+                                <span class="label-icon">👤</span>
+                                Họ Tên
+                            </label>
+                            <input type="text" name="hoTen[]" placeholder="Nhập họ tên..." required />
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <span class="label-icon">⚔️</span>
+                                Vị Trí
+                            </label>
+                            <input type="text" name="viTri[]" placeholder="VD: ADC, Support, Mid..." />
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <span class="label-icon">🔢</span>
+                                Số Áo
+                            </label>
+                            <input type="number" name="soAo[]" placeholder="1-99" min="1" max="99" />
+                        </div>
+                    </div>
+                </div>`;
+            
+            container.insertAdjacentHTML('beforeend', memberHTML);
+            updateRemoveButtons();
+            
+            // Smooth scroll to new member
+            setTimeout(() => {
+                document.getElementById(`member-${memberCount}`).scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+            }, 100);
+        }
+
+        function removeMember(id) {
+            if (confirm('Bạn có chắc muốn xóa thành viên này?')) {
+                const memberCard = document.getElementById(`member-${id}`);
+                memberCard.style.animation = 'slideOut 0.3s ease-in';
+                setTimeout(() => {
+                    memberCard.remove();
+                    updateRemoveButtons();
+                }, 300);
+            }
+        }
+
+        function updateRemoveButtons() {
+            const memberCards = document.querySelectorAll('.member-card');
+            memberCards.forEach((card, index) => {
+                const removeBtn = card.querySelector('.remove-member-btn');
+                if (memberCards.length > 1) {
+                    removeBtn.style.display = 'flex';
+                } else {
+                    removeBtn.style.display = 'none';
+                }
+            });
+        }
+
+        function resetForm() {
+            if (confirm('Bạn có chắc muốn reset form? Tất cả dữ liệu sẽ bị mất.')) {
+                document.getElementById('form-tao-doi').reset();
+                
+                // Reset members to only first member
+                const membersContainer = document.getElementById('membersContainer');
+                membersContainer.innerHTML = `
+                    <div class="member-card" id="member-1">
+                        <div class="member-header">
+                            <span class="member-number">Thành viên #1</span>
+                            <button type="button" class="remove-member-btn" onclick="removeMember(1)" style="display: none;">
+                                <span>✕</span>
+                            </button>
+                        </div>
+                        <div class="member-form">
+                            <div class="form-group">
+                                <label>
+                                    <span class="label-icon">👤</span>
+                                    Họ Tên
+                                </label>
+                                <input type="text" name="hoTen[]" placeholder="Nhập họ tên..." required />
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <span class="label-icon">⚔️</span>
+                                    Vị Trí
+                                </label>
+                                <input type="text" name="viTri[]" placeholder="VD: ADC, Support, Mid..." />
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <span class="label-icon">🔢</span>
+                                    Số Áo
+                                </label>
+                                <input type="number" name="soAo[]" placeholder="1-99" min="1" max="99" />
+                            </div>
+                        </div>
+                    </div>`;
+                
+                memberCount = 1;
+                updateRemoveButtons();
+            }
+        }
+
+        // Xử lý submit form
+        document.getElementById('form-tao-doi').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const tenDoi = document.getElementById('tenDoi').value.trim();
+            const tenHLV = document.getElementById('tenHLV').value.trim();
+            const idGiai = document.getElementById('selectGiaiDau').value;
+
+            // Validate
+            if (!tenDoi || !tenHLV || !idGiai) {
+                alert('Vui lòng điền đầy đủ thông tin bắt buộc!');
+                return;
+            }
+
+            // Lấy thành viên
+            const hoTens = [...document.getElementsByName('hoTen[]')].map(i => i.value.trim());
+            const viTris = [...document.getElementsByName('viTri[]')].map(i => i.value.trim());
+            const soAos = [...document.getElementsByName('soAo[]')].map(i => i.value.trim());
+
+            // Validate members
+            if (hoTens.some(name => !name)) {
+                alert('Vui lòng nhập họ tên cho tất cả thành viên!');
+                return;
+            }
+
+            // Check duplicate jersey numbers
+            const soAoNumbers = soAos.filter(so => so).map(Number);
+            const duplicateNumbers = soAoNumbers.filter((num, index) => soAoNumbers.indexOf(num) !== index);
+            if (duplicateNumbers.length > 0) {
+                alert(`Số áo bị trùng: ${duplicateNumbers.join(', ')}. Vui lòng kiểm tra lại!`);
+                return;
+            }
+
+            const thanhVienList = hoTens.map((hoTen, idx) => ({
+                HoTen: hoTen,
+                ViTri: viTris[idx] || null,
+                SoAo: soAos[idx] ? Number(soAos[idx]) : null
+            }));
+
+            const data = {
+                TenDoi: tenDoi,
+                TenHuanLuyenVien: tenHLV,
+                IdGiai: Number(idGiai),
+                ThanhVien: thanhVienList
+            };
+
+            const submitBtn = document.querySelector('.btn-submit');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<span class="btn-icon">⏳</span>Đang tạo...';
+            submitBtn.disabled = true;
+
+            try {
+                const res = await fetch('http://127.0.0.1:5000/DoiThiDau/AddFull', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+
+                if (res.ok) {
+                    alert('Tạo đội tuyển thành công! 🎉');
+                    resetForm();
+                } else {
+                    alert('Lỗi: ' + (result.error || 'Không thể tạo đội tuyển'));
+                }
+            } catch (error) {
+                alert('Lỗi gửi dữ liệu: ' + error.message);
+            } finally {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Initialize
+        window.onload = function() {
+            loadGiaiDau();
+            updateRemoveButtons();
+        };
+    </script>
+</body>
+</html>

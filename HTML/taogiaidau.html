@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tạo Giải Đấu</title>
+    <link rel="stylesheet" href="/CSS/taogiaidau.css" />
+</head>
+<body>
+    <div class="header">
+        <div class="logo">🎮</div>
+        <div class="nav">
+            <a href="index.html">Trang chủ</a>
+            <a href="giaidau.html">Giải đấu</a>
+            <div class="dropdown">
+                <a href="#">Đội thi đấu ▾</a>
+                <div class="dropdown-content">
+                    <a href="timdoituyen.html">Tìm đội tuyển</a>
+                    <a href="taodoituyen.html">Tạo đội tuyển</a>
+                </div>
+            </div>
+            <a href="trandau.html">Trận Đấu</a>
+            <a href="xephang.html">Bảng Xếp Hạng</a>
+            <a href="lichsugiaidau.html">Lịch Sử Đấu</a>
+            <a href="admin.html">Quản Lý</a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="container">
+            <div class="form-header">
+                <div class="form-icon">🏆</div>
+                <h2>Tạo Giải Đấu Mới</h2>
+                <p class="form-subtitle">Khởi tạo một giải đấu esports chuyên nghiệp</p>
+            </div>
+            
+            <form id="form-giaidau" autocomplete="off">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="TenGiaiDau">
+                            <span class="label-icon">📝</span>
+                            Tên Giải Đấu
+                        </label>
+                        <input type="text" id="TenGiaiDau" name="TenGiaiDau" 
+                               placeholder="Nhập tên giải đấu..." required />
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="NgayBatDau">
+                            <span class="label-icon">📅</span>
+                            Ngày Bắt Đầu
+                        </label>
+                        <input type="date" id="NgayBatDau" name="NgayBatDau" required />
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="NgayKetThuc">
+                            <span class="label-icon">🏁</span>
+                            Ngày Kết Thúc
+                        </label>
+                        <input type="date" id="NgayKetThuc" name="NgayKetThuc" required />
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label for="MoTa">
+                            <span class="label-icon">📄</span>
+                            Mô Tả Giải Đấu
+                        </label>
+                        <textarea id="MoTa" name="MoTa" rows="5" 
+                                  placeholder="Mô tả chi tiết về giải đấu, quy định, giải thưởng..." required></textarea>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel">Hủy</button>
+                    <button type="submit" class="btn-submit">
+                        <span class="btn-icon">✨</span>
+                        Tạo Giải Đấu
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('form-giaidau').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const data = {
+                TenGiai: document.getElementById('TenGiaiDau').value.trim(),
+                NgayBatDau: document.getElementById('NgayBatDau').value,
+                NgayKetThuc: document.getElementById('NgayKetThuc').value,
+                MoTa: document.getElementById('MoTa').value.trim()
+            };
+
+            // Validation
+            if (new Date(data.NgayBatDau) >= new Date(data.NgayKetThuc)) {
+                alert('Ngày kết thúc phải sau ngày bắt đầu!');
+                return;
+            }
+
+            const submitBtn = document.querySelector('.btn-submit');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<span class="btn-icon">⏳</span>Đang tạo...';
+            submitBtn.disabled = true;
+
+            fetch('http://127.0.0.1:5000/GiaiDau/Add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(res => res.json())
+            .then(response => {
+                if (response.message) {
+                    alert('Tạo giải đấu thành công!');
+                    this.reset();
+                } else if (response.error) {
+                    alert('Lỗi: ' + response.error);
+                }
+            })
+            .catch(error => {
+                alert('Lỗi khi gửi dữ liệu: ' + error.message);
+            })
+            .finally(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
+        });
+
+        document.querySelector('.btn-cancel').addEventListener('click', function() {
+            if (confirm('Bạn có chắc muốn hủy? Dữ liệu sẽ bị mất.')) {
+                document.getElementById('form-giaidau').reset();
+            }
+        });
+    </script>
+</body>
+</html>

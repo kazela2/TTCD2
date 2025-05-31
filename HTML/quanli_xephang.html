@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quản lí Bảng Xếp Hạng</title>
+    <link rel="stylesheet" href="/CSS/quanli_xephang.css" />
+</head>
+<body>
+    <div class="sidebar">
+        <h2>Quản Trị</h2>
+        <a href="quanlygiaidau.html">📦 Quản lý Giải Đấu</a>
+        <a href="quanlydoituyenvathanhvien.html">🧾 Quản lý Đội Tuyển và Thành Viên</a>
+        <a href="quanli_trandau.html">👥 Quản lý Trận Đấu</a>
+        <a href="quanli_xephang.html">📊 Quản Lý Bảng Xếp Hạng</a>
+        <a href="quanli_lichsu.html">📊 Lịch Sử Giải Đấu</a>
+        <a href="index.html">Quay Lại</a>
+      </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>Quản Lý Bảng Xếp Hạng</h1>
+            <div class="header-actions">
+                <button id="toggle-form-btn">➕ Thêm Mới</button>
+                <button id="refresh-btn">🔄 Tải lại</button>
+            </div>
+        </div>
+
+        <!-- Form thêm mới (ẩn mặc định) -->
+        <form id="form-add" style="display:none;">
+            <h3>Thêm mới Bảng Xếp Hạng</h3>
+            <label for="input-iddoi">Id Đội Tuyển:</label>
+            <input type="number" id="input-iddoi" required />
+
+            <label for="input-idgiai">Id Giải Đấu:</label>
+            <input type="number" id="input-idgiai" required />
+
+            <label for="input-tranthang">Trận Thắng:</label>
+            <input type="number" id="input-tranthang" value="0" min="0" required />
+
+            <label for="input-tranhoa">Trận Hòa:</label>
+            <input type="number" id="input-tranhoa" value="0" min="0" required />
+
+            <label for="input-tranthua">Trận Thua:</label>
+            <input type="number" id="input-tranthua" value="0" min="0" required />
+
+            <label for="input-hieuso">Hiệu Số:</label>
+            <input type="number" id="input-hieuso" value="0" required />
+
+            <label for="input-diem">Điểm:</label>
+            <input type="number" id="input-diem" value="0" required />
+
+            <button type="submit" id="save-btn">💾 Lưu</button>
+            <button type="button" id="cancel-btn">❌ Hủy</button>
+        </form>
+
+        <!-- Nơi hiển thị bảng xếp hạng -->
+        <div id="data-container"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://127.0.0.1:5000';
+
+        // Hàm tải dữ liệu bảng xếp hạng và hiển thị
+        async function loadBangXepHang() {
+            const container = document.getElementById('data-container');
+            container.innerHTML = '<p>Đang tải dữ liệu...</p>';
+            try {
+                const response = await fetch(`${API_BASE}/BangXepHang/GetAll`);
+                if (!response.ok) throw new Error(`Lỗi server: ${response.status}`);
+                const data = await response.json();
+
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<p>📊 Không có dữ liệu bảng xếp hạng.</p>';
+                    return;
+                }
+
+                let html = '<ul class="ranking-list">';
+                data.forEach((item, index) => {
+                    html += `
+                        <li class="ranking-item">
+                            <div>
+                                <strong>Hạng ${index + 1}</strong> - 
+                                <strong>Đội:</strong> ${item.TenDoi}, 
+                                <strong>Giải:</strong> ${item.TenGiai}, 
+                                <strong>Thắng:</strong> ${item.TranThang}, 
+                                <strong>Hòa:</strong> ${item.TranHoa}, 
+                                <strong>Thua:</strong> ${item.TranThua}, 
+                                <strong>Hiệu số:</strong> ${item.HieuSo}, 
+                                <strong>Điểm:</strong> ${item.Diem}
+                            </div>
+                            <button onclick="xoaXepHang(${item.Id})" class="btn-delete">🗑️ Xóa</button>
+                        </li>
+                    `;
+                });
+                html += '</ul>';
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Lỗi khi tải dữ liệu:', error);
+                container.innerHTML = `<p class="error">❌ Lỗi: ${error.message}</p>`;
+            }
+        }
+
+        // Hàm xóa bản ghi bảng xếp hạng theo id
+        async function xoaXepHang(id) {
+            if (!confirm('Bạn có chắc chắn muốn xóa?')) return;
+            try {
+                const response = await fetch(`${API_BASE}/BangXepHang/Delete/${id}`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+                alert(result.message || result.error);
+                loadBangXepHang();
+            } catch (error) {
+                console.error('Lỗi khi xóa:', error);
+                alert('❌ Không thể xóa: ' + error.message);
+            }
+        }
+
+        // Hàm thêm mới bảng xếp hạng
+        async function themXepHangForm(event) {
+            event.preventDefault(); // Ngăn reload trang
+
+            const doiInput = document.getElementById('input-iddoi');
+            const giaiInput = document.getElementById('input-idgiai');
+            const tranThangInput = document.getElementById('input-tranthang');
+            const tranHoaInput = document.getElementById('input-tranhoa');
+            const tranThuaInput = document.getElementById('input-tranthua');
+            const hieuSoInput = document.getElementById('input-hieuso');
+            const diemInput = document.getElementById('input-diem');
+
+            // Kiểm tra dữ liệu hợp lệ
+            if (
+                !doiInput.value || !giaiInput.value ||
+                tranThangInput.value < 0 || tranHoaInput.value < 0 || tranThuaInput.value < 0
+            ) {
+                alert('❌ Vui lòng nhập đầy đủ và hợp lệ các trường.');
+                return;
+            }
+
+            const data = {
+                IdDoi: parseInt(doiInput.value),
+                IdGiai: parseInt(giaiInput.value),
+                TranThang: parseInt(tranThangInput.value),
+                TranHoa: parseInt(tranHoaInput.value),
+                TranThua: parseInt(tranThuaInput.value),
+                HieuSo: parseInt(hieuSoInput.value),
+                Diem: parseInt(diemInput.value)
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/BangXepHang/Add`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                alert(result.message || result.error);
+
+                if (!result.error) {
+                    // Clear form và ẩn form
+                    doiInput.value = '';
+                    giaiInput.value = '';
+                    tranThangInput.value = '0';
+                    tranHoaInput.value = '0';
+                    tranThuaInput.value = '0';
+                    hieuSoInput.value = '0';
+                    diemInput.value = '0';
+
+                    toggleForm(false);
+                    loadBangXepHang();
+                }
+            } catch (error) {
+                console.error('Lỗi khi thêm:', error);
+                alert('❌ Không thể thêm mới: ' + error.message);
+            }
+        }
+
+        // Bật/tắt hiển thị form
+        function toggleForm(show) {
+            const form = document.getElementById('form-add');
+            form.style.display = show ? 'block' : 'none';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadBangXepHang();
+
+            // Bật/tắt form
+            document.getElementById('toggle-form-btn').addEventListener('click', () => {
+                const form = document.getElementById('form-add');
+                toggleForm(form.style.display !== 'block');
+            });
+
+            // Nút tải lại dữ liệu
+            document.getElementById('refresh-btn').addEventListener('click', loadBangXepHang);
+
+            // Lưu dữ liệu
+            document.getElementById('form-add').addEventListener('submit', themXepHangForm);
+
+            // Hủy form
+            document.getElementById('cancel-btn').addEventListener('click', () => {
+                toggleForm(false);
+            });
+        });
+    </script>
+</body>
+</html>

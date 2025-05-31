@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lí Lịch Sử</title>
+    <link rel="stylesheet" href="/CSS/quanli_lichsu.css">
+</head>
+<body>
+    <div class="sidebar">
+        <h2>Quản Trị</h2>
+        <a href="quanlygiaidau.html">📦 Quản lý Giải Đấu</a>
+        <a href="quanlydoituyenvathanhvien.html">🧾 Quản lý Đội Tuyển và Thành Viên</a>
+        <a href="quanli_trandau.html">👥 Quản lý Trận Đấu</a>
+        <a href="quanli_xephang.html">📊 Quản Lý Bảng Xếp Hạng</a>
+        <a href="quanli_lichsu.html">📊 Lịch Sử Giải Đấu</a>
+        <a href="index.html">Quay Lại</a>
+      </div>
+
+      <div class="main-content">
+        <div class="header">
+            <h1>📊 Quản Lý Lịch Sử Giải Đấu</h1>
+        </div>
+
+        <div id="alert" class="alert"></div>
+
+        <div class="controls">
+            <h3>Thêm Lịch Sử Mới</h3>
+            <form id="addForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="giaiDau">Giải Đấu:</label>
+                        <select id="giaiDau" required>
+                            <option value="">-- Chọn Giải Đấu --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="nam">Năm:</label>
+                        <input type="number" id="nam" min="1900" max="2100" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="doiVoDich">Đội Vô Địch:</label>
+                        <select id="doiVoDich" required>
+                            <option value="">-- Chọn Đội Vô Địch --</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="moTa">Mô Tả:</label>
+                    <textarea id="moTa" rows="3" placeholder="Mô tả về giải đấu..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-success">➕ Thêm Lịch Sử</button>
+            </form>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Giải Đấu</th>
+                        <th>Năm</th>
+                        <th>Đội Vô Địch</th>
+                        <th>Mô Tả</th>
+                        <th>Thao Tác</th>
+                    </tr>
+                </thead>
+                <tbody id="lichSuTable">
+                    <!-- Dữ liệu sẽ được load bằng JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal Sửa -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>✏️ Sửa Lịch Sử</h3>
+                <span class="close" onclick="closeEditModal()">&times;</span>
+            </div>
+            <form id="editForm">
+                <input type="hidden" id="editId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editNam">Năm:</label>
+                        <input type="number" id="editNam" min="1900" max="2100" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="editDoiVoDich">Đội Vô Địch:</label>
+                    <select id="editDoiVoDich" required>
+                        <option value="">-- Chọn Đội Vô Địch --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editMoTa">Mô Tả:</label>
+                    <textarea id="editMoTa" rows="3"></textarea>
+                </div>
+                <div style="text-align: right;">
+                    <button type="button" class="btn" onclick="closeEditModal()">Hủy</button>
+                    <button type="submit" class="btn btn-warning">💾 Cập Nhật</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000';
+
+        // Load dữ liệu khi trang được tải
+        document.addEventListener('DOMContentLoaded', function() {
+            loadLichSu();
+            loadGiaiDau();
+            loadDoiThiDau();
+        });
+
+        // Load danh sách lịch sử
+        async function loadLichSu() {
+            try {
+                const response = await fetch(`${API_BASE}/LichSuGiaiDau/GetAll`);
+                const data = await response.json();
+                
+                const tbody = document.getElementById('lichSuTable');
+                tbody.innerHTML = '';
+                
+                data.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${item.Idls}</td>
+                        <td>${item.TenGiai || 'N/A'}</td>
+                        <td>${item.Nam}</td>
+                        <td>${item.TenDoiVoDich || 'N/A'}</td>
+                        <td>${item.MoTa || ''}</td>
+                        <td class="actions">
+                            <button class="btn btn-warning" onclick="editLichSu(${item.Idls})">✏️</button>
+                            <button class="btn btn-danger" onclick="deleteLichSu(${item.Idls})">🗑️</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                showAlert('Lỗi khi tải dữ liệu: ' + error.message, 'error');
+            }
+        }
+
+        // Load danh sách giải đấu
+        async function loadGiaiDau() {
+            try {
+                const response = await fetch(`${API_BASE}/GiaiDau/GetAll`);
+                const data = await response.json();
+                
+                const select = document.getElementById('giaiDau');
+                select.innerHTML = '<option value="">-- Chọn Giải Đấu --</option>';
+                
+                data.forEach(giai => {
+                    const option = document.createElement('option');
+                    option.value = giai.IdGiai;
+                    option.textContent = giai.TenGiai;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Lỗi khi tải giải đấu:', error);
+            }
+        }
+
+        // Load danh sách đội thi đấu
+        async function loadDoiThiDau() {
+            try {
+                const response = await fetch(`${API_BASE}/DoiThiDau/GetAll`);
+                const data = await response.json();
+                
+                const selects = [
+                    document.getElementById('doiVoDich'),
+                    document.getElementById('editDoiVoDich')
+                ];
+                
+                selects.forEach(select => {
+                    select.innerHTML = '<option value="">-- Chọn Đội Vô Địch --</option>';
+                    data.forEach(doi => {
+                        const option = document.createElement('option');
+                        option.value = doi.IdDoi;
+                        option.textContent = doi.TenDoi;
+                        select.appendChild(option);
+                    });
+                });
+            } catch (error) {
+                console.error('Lỗi khi tải đội thi đấu:', error);
+            }
+        }
+
+        // Thêm lịch sử mới
+        document.getElementById('addForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                IdGiai: parseInt(document.getElementById('giaiDau').value),
+                Nam: parseInt(document.getElementById('nam').value),
+                DoiVoDich: parseInt(document.getElementById('doiVoDich').value),
+                MoTa: document.getElementById('moTa').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/LichSuGiaiDau/Add`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showAlert(result.message, 'success');
+                    document.getElementById('addForm').reset();
+                    loadLichSu();
+                } else {
+                    showAlert(result.error, 'error');
+                }
+            } catch (error) {
+                showAlert('Lỗi khi thêm lịch sử: ' + error.message, 'error');
+            }
+        });
+
+        // Sửa lịch sử
+        async function editLichSu(id) {
+            try {
+                const response = await fetch(`${API_BASE}/LichSuGiaiDau/GetAll`);
+                const data = await response.json();
+                const lichSu = data.find(item => item.Idls === id);
+                
+                if (lichSu) {
+                    document.getElementById('editId').value = lichSu.Idls;
+                    document.getElementById('editNam').value = lichSu.Nam;
+                    document.getElementById('editDoiVoDich').value = lichSu.DoiVoDich;
+                    document.getElementById('editMoTa').value = lichSu.MoTa || '';
+                    
+                    document.getElementById('editModal').style.display = 'block';
+                }
+            } catch (error) {
+                showAlert('Lỗi khi tải thông tin lịch sử: ' + error.message, 'error');
+            }
+        }
+
+        // Cập nhật lịch sử
+        document.getElementById('editForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const id = document.getElementById('editId').value;
+            const formData = {
+                Nam: parseInt(document.getElementById('editNam').value),
+                DoiVoDich: parseInt(document.getElementById('editDoiVoDich').value),
+                MoTa: document.getElementById('editMoTa').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/LichSuGiaiDau/Update/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showAlert(result.message, 'success');
+                    closeEditModal();
+                    loadLichSu();
+                } else {
+                    showAlert(result.error, 'error');
+                }
+            } catch (error) {
+                showAlert('Lỗi khi cập nhật lịch sử: ' + error.message, 'error');
+            }
+        });
+
+        // Xóa lịch sử
+        async function deleteLichSu(id) {
+            if (!confirm('Bạn có chắc chắn muốn xóa lịch sử này?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/LichSuGiaiDau/Delete/${id}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showAlert(result.message, 'success');
+                    loadLichSu();
+                } else {
+                    showAlert(result.error, 'error');
+                }
+            } catch (error) {
+                showAlert('Lỗi khi xóa lịch sử: ' + error.message, 'error');
+            }
+        }
+
+        // Đóng modal sửa
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        // Hiển thị thông báo
+        function showAlert(message, type) {
+            const alert = document.getElementById('alert');
+            alert.className = `alert alert-${type === 'error' ? 'error' : 'success'}`;
+            alert.textContent = message;
+            alert.style.display = 'block';
+            
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 3000);
+        }
+
+        // Đóng modal khi click bên ngoài
+        window.onclick = function(event) {
+            const modal = document.getElementById('editModal');
+            if (event.target === modal) {
+                closeEditModal();
+            }
+        };
+    </script>
+</body>
+</html>

@@ -70,27 +70,6 @@ CREATE TABLE LichSuGiaiDau (
     FOREIGN KEY (DoiVoDich) REFERENCES DoiThiDau(IdDoi)
 );
 
--- B?ng BinhLuan
-CREATE TABLE BinhLuan (
-    IdBinhLuan INT PRIMARY KEY IDENTITY(1,1),
-    IdTran INT,
-    NguoiBinhLuan VARCHAR(100),
-    NoiDung TEXT,
-    ThoiGian DATETIME DEFAULT GETDATE(),
-    FOREIGN KEY (IdTran) REFERENCES TranDau(IdTran)
-);
-
--- B?ng GiaiThuong
-CREATE TABLE GiaiThuong (
-    IdGiaiThuong INT PRIMARY KEY IDENTITY(1,1),
-    IdGiai INT,
-    TenGiaiThuong VARCHAR(100),
-    GiaTri DECIMAL(15,2),
-    DoiNhan INT,
-    FOREIGN KEY (IdGiai) REFERENCES GiaiDau(IdGiai),
-    FOREIGN KEY (DoiNhan) REFERENCES DoiThiDau(IdDoi)
-);
-
 
 INSERT INTO GiaiDau (TenGiai, NgayBatDau, NgayKetThuc, MoTa) VALUES
 ('Giải Đấu Mùa Hè 2025', '2025-06-01', '2025-06-30', 'Giải đấu lớn diễn ra vào mùa hè năm 2025.'),
