@@ -1,86 +1,323 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Quản lý giải đấu</title>
-  <link rel="stylesheet" href="/CSS/quanlygiaidau.css" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Quản lý giải đấu</title>
+    <link rel="stylesheet" href="/CSS/quanlygiaidau.css">
 </head>
 <body>
-  <div class="sidebar">
-    <h2>Quản Trị</h2>
-    <a href="quanlygiaidau.html">📦 Quản lý Giải Đấu</a>
-    <a href="quanlydoituyenvathanhvien.html">🧾 Quản lý Đội Tuyển và Thành Viên</a>
-    <a href="quanli_trandau.html">👥 Quản lý Trận Đấu</a>
-    <a href="quanli_xephang.html">📊 Quản Lý Bảng Xếp Hạng</a>
-    <a href="quanli_lichsu.html">📊 Lịch Sử Giải Đấu</a>
-    <a href="index.html">Quay Lại</a>
-  </div>
+    <div class="sidebar">
+        <h2>Quản Trị</h2>
+        <a href="quanlygiaidau.html">📦 Quản lý Giải Đấu</a>
+        <a href="quanlydoituyenvathanhvien.html">🧾 Quản lý Đội Tuyển và Thành Viên</a>
+        <a href="quanli_trandau.html">👥 Quản lý Trận Đấu</a>
+        <a href="quanli_xephang.html">📊 Quản Lý Bảng Xếp Hạng</a>
+        <a href="quanli_lichsu.html">📊 Lịch Sử Giải Đấu</a>
+        <a href="index.html">🏠 Quay Lại</a>
+    </div>
 
-  <div class="content">
-    <h2>Danh sách Giải Đấu</h2>
-    <table id="giaiTable">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Tên Giải</th>
-          <th>Ngày Bắt Đầu</th>
-          <th>Ngày Kết Thúc</th>
-          <th>Mô Tả</th>
-          <th>Hành động</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Dữ liệu sẽ được chèn ở đây bằng JavaScript -->
-      </tbody>
-    </table>
-  </div>
+    <div class="content">
+        <div class="header">
+            <h2>🏆 Quản Lý Giải Đấu</h2>
+            <div class="btn-container">
+                <button class="btn btn-primary" onclick="openAddModal()">
+                    ➕ Thêm Giải Đấu Mới
+                </button>
+                <button class="btn btn-success" onclick="loadGiaiDau()">
+                    🔄 Làm Mới
+                </button>
+            </div>
+            <div class="search-container">
+                <input type="text" id="searchInput" class="search-input" placeholder="🔍 Tìm kiếm giải đấu..." onkeyup="searchTournaments()">
+            </div>
+        </div>
 
-  <script>
-    async function loadGiaiDau() {
-      try {
-        const res = await fetch("http://127.0.0.1:5000/GiaiDau/GetAll");
-        const data = await res.json();
-        const tbody = document.querySelector("#giaiTable tbody");
-        tbody.innerHTML = "";
+        <div class="table-container">
+            <div id="loadingState" class="loading">
+                🔄 Đang tải dữ liệu...
+            </div>
+            <table id="giaiTable" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Tên Giải</th>
+                        <th>Ngày Bắt Đầu</th>
+                        <th>Ngày Kết Thúc</th>
+                        <th>Số Team</th>
+                        <th>Giải Thưởng</th>
+                        <th>Mô Tả</th>
+                        <th>Hành Động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Dữ liệu sẽ được chèn ở đây bằng JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
 
-        data.forEach(giai => {
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td>${giai.IdGiai}</td>
-            <td>${giai.TenGiai}</td>
-            <td>${giai.NgayBatDau || ""}</td>
-            <td>${giai.NgayKetThuc || ""}</td>
-            <td>${giai.MoTa || ""}</td>
-            <td><button onclick="xoaGiaiDau(${giai.IdGiai})" >Xoá</button></td>
-          `;
-          tbody.appendChild(row);
-        });
-      } catch (error) {
-        console.error("Lỗi khi tải giải đấu:", error);
-      }
-    }
+    <!-- Modal Thêm/Sửa Giải Đấu -->
+    <div id="tournamentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Thêm Giải Đấu Mới</h3>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="tournamentForm">
+                    <div class="form-group">
+                        <label for="tenGiai">Tên Giải Đấu *</label>
+                        <input type="text" id="tenGiai" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="ngayBatDau">Ngày Bắt Đầu</label>
+                        <input type="date" id="ngayBatDau">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="ngayKetThuc">Ngày Kết Thúc</label>
+                        <input type="date" id="ngayKetThuc">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="soTeamThamGia">Số Team Tham Gia</label>
+                        <input type="number" id="soTeamThamGia" min="0" value="0">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="giaiThuong">Giải Thưởng (VND)</label>
+                        <input type="number" id="giaiThuong" min="0" value="0">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="hinhAnh">Hình Ảnh (URL)</label>
+                        <input type="url" id="hinhAnh" placeholder="https://example.com/image.jpg">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="moTa">Mô Tả</label>
+                        <textarea id="moTa" placeholder="Nhập mô tả chi tiết về giải đấu..."></textarea>
+                    </div>
+                    
+                    <div class="btn-container">
+                        <button type="submit" class="btn btn-primary">💾 Lưu</button>
+                        <button type="button" class="btn btn-danger" onclick="closeModal()">❌ Hủy</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
-    async function xoaGiaiDau(id) {
-      if (confirm("Bạn có chắc muốn xoá giải đấu này không?")) {
-        try {
-          const res = await fetch(`http://127.0.0.1:5000/GiaiDau/Delete/${id}`, {
-            method: "DELETE"
-          });
-          const result = await res.json();
-          if (res.ok) {
-            alert(result.message || "Xoá thành công!");
-            loadGiaiDau(); // Tải lại danh sách sau khi xoá
-          } else {
-            alert(result.error || "Có lỗi xảy ra khi xoá!");
-          }
-        } catch (error) {
-          console.error("Lỗi khi gọi API xoá:", error);
+    <script>
+        let currentEditId = null;
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND'
+            }).format(amount);
         }
-      }
-    }
 
-    window.onload = loadGiaiDau;
-  </script>
+        function formatDate(dateString) {
+            if (!dateString) return 'Chưa xác định';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('vi-VN');
+        }
+
+        async function loadGiaiDau() {
+            try {
+                document.getElementById('loadingState').style.display = 'block';
+                document.getElementById('giaiTable').style.display = 'none';
+                
+                const res = await fetch("http://127.0.0.1:5000/GiaiDau/GetAll");
+                const data = await res.json();
+                
+                const tbody = document.querySelector("#giaiTable tbody");
+                tbody.innerHTML = "";
+
+                if (data.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="8" class="empty-state">
+                                <div>
+                                    <h3>Chưa có giải đấu nào</h3>
+                                    <p>Hãy thêm giải đấu đầu tiên!</p>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    data.forEach(giai => {
+                        const row = document.createElement("tr");
+                        row.innerHTML = `
+                            <td><strong>#${giai.IdGiai}</strong></td>
+                            <td><strong>${giai.TenGiai}</strong></td>
+                            <td><span class="date-display">${formatDate(giai.NgayBatDau)}</span></td>
+                            <td><span class="date-display">${formatDate(giai.NgayKetThuc)}</span></td>
+                            <td><strong>${giai.SoTeamThamGia}</strong></td>
+                            <td><span class="currency">${formatCurrency(giai.GiaiThuong)}</span></td>
+                            <td>${giai.MoTa ? (giai.MoTa.length > 50 ? giai.MoTa.substring(0, 50) + '...' : giai.MoTa) : 'Không có mô tả'}</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn btn-warning" onclick="editGiaiDau(${giai.IdGiai})">✏️</button>
+                                    <button class="btn btn-danger" onclick="xoaGiaiDau(${giai.IdGiai})">🗑️</button>
+                                </div>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                }
+
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('giaiTable').style.display = 'table';
+            } catch (error) {
+                console.error("Lỗi khi tải giải đấu:", error);
+                document.getElementById('loadingState').innerHTML = '❌ Lỗi khi tải dữ liệu. Vui lòng thử lại.';
+            }
+        }
+
+        function openAddModal() {
+            currentEditId = null;
+            document.getElementById('modalTitle').textContent = 'Thêm Giải Đấu Mới';
+            document.getElementById('tournamentForm').reset();
+            document.getElementById('tournamentModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        async function editGiaiDau(id) {
+            try {
+                const res = await fetch(`http://127.0.0.1:5000/GiaiDau/GetById/${id}`);
+                const giai = await res.json();
+                
+                if (res.ok) {
+                    currentEditId = id;
+                    document.getElementById('modalTitle').textContent = 'Chỉnh Sửa Giải Đấu';
+                    document.getElementById('tenGiai').value = giai.TenGiai || '';
+                    document.getElementById('ngayBatDau').value = giai.NgayBatDau || '';
+                    document.getElementById('ngayKetThuc').value = giai.NgayKetThuc || '';
+                    document.getElementById('soTeamThamGia').value = giai.SoTeamThamGia || 0;
+                    document.getElementById('giaiThuong').value = giai.GiaiThuong || 0;
+                    document.getElementById('hinhAnh').value = giai.HinhAnh || '';
+                    document.getElementById('moTa').value = giai.MoTa || '';
+                    
+                    document.getElementById('tournamentModal').style.display = 'block';
+                    document.body.style.overflow = 'hidden';
+                } else {
+                    alert('Không thể tải thông tin giải đấu!');
+                }
+            } catch (error) {
+                console.error('Lỗi khi lấy thông tin giải đấu:', error);
+                alert('Có lỗi xảy ra khi lấy thông tin giải đấu!');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('tournamentModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+            currentEditId = null;
+        }
+
+        async function xoaGiaiDau(id) {
+            if (confirm("⚠️ Bạn có chắc muốn xóa giải đấu này không?\n\nHành động này không thể hoàn tác!")) {
+                try {
+                    const res = await fetch(`http://127.0.0.1:5000/GiaiDau/Delete/${id}`, {
+                        method: "DELETE"
+                    });
+                    const result = await res.json();
+                    
+                    if (res.ok) {
+                        alert("✅ " + (result.message || "Xóa thành công!"));
+                        loadGiaiDau();
+                    } else {
+                        alert("❌ " + (result.error || "Có lỗi xảy ra khi xóa!"));
+                    }
+                } catch (error) {
+                    console.error("Lỗi khi gọi API xóa:", error);
+                    alert("❌ Có lỗi xảy ra khi xóa giải đấu!");
+                }
+            }
+        }
+
+        function searchTournaments() {
+            const filter = document.getElementById('searchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('#giaiTable tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                if (text.includes(filter)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        // Xử lý form submit
+        document.getElementById('tournamentForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                TenGiai: document.getElementById('tenGiai').value,
+                NgayBatDau: document.getElementById('ngayBatDau').value || null,
+                NgayKetThuc: document.getElementById('ngayKetThuc').value || null,
+                SoTeamThamGia: parseInt(document.getElementById('soTeamThamGia').value) || 0,
+                GiaiThuong: parseInt(document.getElementById('giaiThuong').value) || 0,
+                HinhAnh: document.getElementById('hinhAnh').value || '',
+                MoTa: document.getElementById('moTa').value || ''
+            };
+
+            try {
+                let url, method;
+                if (currentEditId) {
+                    url = `http://127.0.0.1:5000/GiaiDau/Update/${currentEditId}`;
+                    method = 'PUT';
+                } else {
+                    url = 'http://127.0.0.1:5000/GiaiDau/Create';
+                    method = 'POST';
+                }
+
+                const res = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await res.json();
+
+                if (res.ok) {
+                    alert("✅ " + (result.message || "Thành công!"));
+                    closeModal();
+                    loadGiaiDau();
+                } else {
+                    alert("❌ " + (result.error || "Có lỗi xảy ra!"));
+                }
+            } catch (error) {
+                console.error('Lỗi khi gửi dữ liệu:', error);
+                alert('❌ Có lỗi xảy ra khi lưu dữ liệu!');
+            }
+        });
+
+        // Đóng modal khi click bên ngoài
+        window.onclick = function(event) {
+            const modal = document.getElementById('tournamentModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // Đóng modal bằng phím Escape
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // Tự động tải dữ liệu khi trang được tải
+        window.onload = loadGiaiDau;
+    </script>
 </body>
 </html>

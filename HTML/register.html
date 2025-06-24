@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng Ký - Gaming Tournament</title>
+    <title>Đăng Ký Quản Trị - Gaming Tournament</title>
     <link rel="stylesheet" href="/CSS/register.css">
 </head>
 <body>
@@ -11,96 +11,67 @@
         <div class="register-form">
             <div class="form-header">
                 <div class="logo">🎮</div>
-                <h2>Đăng Ký</h2>
-                <p>Tạo tài khoản mới để tham gia giải đấu!</p>
+                <h2>Đăng Ký Quản Trị</h2>
+                <p>Tạo tài khoản quản trị viên mới!</p>
             </div>
             
+            <div id="errorMessage" class="error-message" style="display: none;"></div>
+            <div id="successMessage" class="success-message" style="display: none;"></div>
+            
             <form id="registerForm">
-                <div class="input-row">
-                    <div class="input-group">
-                        <label for="firstName">Họ</label>
-                        <input type="text" id="firstName" name="firstName" required>
-                    </div>
-                    <div class="input-group">
-                        <label for="lastName">Tên</label>
-                        <input type="text" id="lastName" name="lastName" required>
-                    </div>
+                <div class="input-group">
+                    <label for="tenDangNhap">Tên đăng nhập <span class="required">*</span></label>
+                    <input type="text" id="tenDangNhap" name="tenDangNhap" required>
+                    <small class="help-text">Tên đăng nhập để truy cập hệ thống</small>
                 </div>
                 
                 <div class="input-group">
-                    <label for="username">Tên đăng nhập</label>
-                    <input type="text" id="username" name="username" required>
-                    <small class="help-text">Tên đăng nhập phải có ít nhất 3 ký tự</small>
+                    <label for="hoTen">Họ và tên <span class="required">*</span></label>
+                    <input type="text" id="hoTen" name="hoTen" required>
+                    <small class="help-text">Họ tên đầy đủ của quản trị viên</small>
                 </div>
                 
                 <div class="input-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" name="email" required>
-                </div>
-                
-                <div class="input-group">
-                    <label for="phone">Số điện thoại</label>
-                    <input type="tel" id="phone" name="phone" required>
-                </div>
-                
-                <div class="input-group">
-                    <label for="password">Mật khẩu</label>
-                    <input type="password" id="password" name="password" required>
-                    <span class="toggle-password" onclick="togglePassword('password')">👁️</span>
+                    <label for="matKhau">Mật khẩu <span class="required">*</span></label>
+                    <input type="password" id="matKhau" name="matKhau" required>
+                    <span class="toggle-password" onclick="togglePassword('matKhau')">👁️</span>
                     <small class="help-text">Mật khẩu phải có ít nhất 6 ký tự</small>
                 </div>
                 
                 <div class="input-group">
-                    <label for="confirmPassword">Xác nhận mật khẩu</label>
+                    <label for="confirmPassword">Xác nhận mật khẩu <span class="required">*</span></label>
                     <input type="password" id="confirmPassword" name="confirmPassword" required>
                     <span class="toggle-password" onclick="togglePassword('confirmPassword')">👁️</span>
                 </div>
                 
                 <div class="input-group">
-                    <label for="gameRole">Vị trí chơi yêu thích</label>
-                    <select id="gameRole" name="gameRole" required>
-                        <option value="">Chọn vị trí</option>
-                        <option value="carry">Carry/ADC</option>
-                        <option value="support">Support</option>
-                        <option value="mid">Mid Lane</option>
-                        <option value="jungle">Jungle</option>
-                        <option value="top">Top Lane</option>
-                        <option value="flex">Linh hoạt</option>
+                    <label for="vaiTro">Vai trò <span class="required">*</span></label>
+                    <select id="vaiTro" name="vaiTro" required>
+                        <option value="">Chọn vai trò</option>
+                        <option value="Admin">Admin</option>
+                        <option value="Moderator">Moderator</option>
+                        <option value="Manager">Manager</option>
+                        <option value="Support">Support</option>
                     </select>
+                </div>
+                
+                <div class="input-group">
+                    <label for="moTa">Mô tả</label>
+                    <textarea id="moTa" name="moTa" rows="3" placeholder="Mô tả về vai trò và trách nhiệm..."></textarea>
                 </div>
                 
                 <div class="checkbox-group">
                     <label class="checkbox">
                         <input type="checkbox" name="terms" required>
                         <span class="checkmark"></span>
-                        Tôi đồng ý với <a href="#" class="terms-link">Điều khoản sử dụng</a> và <a href="#" class="privacy-link">Chính sách bảo mật</a>
+                        Tôi đồng ý với <a href="#" class="terms-link">Điều khoản sử dụng</a> và <a href="#" class="privacy-link">Chính sách bảo mật</a> <span class="required">*</span>
                     </label>
                 </div>
                 
-                <div class="checkbox-group">
-                    <label class="checkbox">
-                        <input type="checkbox" name="newsletter">
-                        <span class="checkmark"></span>
-                        Nhận thông báo về giải đấu và sự kiện mới
-                    </label>
-                </div>
-                
-                <button type="submit" class="register-btn">Đăng Ký</button>
-                
-                <div class="divider">
-                    <span>Hoặc đăng ký với</span>
-                </div>
-                
-                <div class="social-register">
-                    <button type="button" class="google-btn">
-                        <span class="google-icon">G</span>
-                        Google
-                    </button>
-                    <button type="button" class="facebook-btn">
-                        <span class="facebook-icon">f</span>
-                        Facebook
-                    </button>
-                </div>
+                <button type="submit" class="register-btn">
+                    <span class="btn-text">Đăng Ký</span>
+                    <span class="loading-spinner" style="display: none;">⟳</span>
+                </button>
                 
                 <div class="login-link">
                     Đã có tài khoản? <a href="login.html">Đăng nhập ngay</a>
@@ -110,6 +81,8 @@
     </div>
 
     <script>
+        const API_BASE_URL = 'http://127.0.0.1:5000'; // Thay đổi URL phù hợp với server của bạn
+
         function togglePassword(inputId) {
             const passwordInput = document.getElementById(inputId);
             const toggleIcon = passwordInput.nextElementSibling;
@@ -123,35 +96,152 @@
             }
         }
 
-        document.getElementById('registerForm').addEventListener('submit', function(e) {
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            const successDiv = document.getElementById('successMessage');
+            
+            successDiv.style.display = 'none';
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            
+            // Tự động ẩn sau 5 giây
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            const successDiv = document.getElementById('successMessage');
+            
+            errorDiv.style.display = 'none';
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            
+            // Tự động ẩn sau 3 giây và chuyển hướng
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+                window.location.href = 'login.html';
+            }, 3000);
+        }
+
+        function showLoading(show) {
+            const btnText = document.querySelector('.btn-text');
+            const loadingSpinner = document.querySelector('.loading-spinner');
+            const submitBtn = document.querySelector('.register-btn');
+            
+            if (show) {
+                btnText.style.display = 'none';
+                loadingSpinner.style.display = 'inline-block';
+                submitBtn.disabled = true;
+            } else {
+                btnText.style.display = 'inline';
+                loadingSpinner.style.display = 'none';
+                submitBtn.disabled = false;
+            }
+        }
+
+        async function registerAdmin(formData) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/QuanTri/Register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showSuccess(result.message || 'Đăng ký thành công!');
+                } else {
+                    showError(result.error || 'Có lỗi xảy ra khi đăng ký!');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showError('Không thể kết nối đến server. Vui lòng thử lại sau!');
+            }
+        }
+
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const formData = new FormData(this);
-            const password = formData.get('password');
+            const tenDangNhap = formData.get('tenDangNhap').trim();
+            const hoTen = formData.get('hoTen').trim();
+            const matKhau = formData.get('matKhau');
             const confirmPassword = formData.get('confirmPassword');
+            const vaiTro = formData.get('vaiTro');
+            const moTa = formData.get('moTa').trim();
             const terms = formData.get('terms');
             
+            // Validate empty fields
+            if (!tenDangNhap || !hoTen || !matKhau || !vaiTro) {
+                showError('Vui lòng điền đầy đủ các trường bắt buộc!');
+                return;
+            }
+            
             // Validate password match
-            if (password !== confirmPassword) {
-                alert('Mật khẩu xác nhận không khớp!');
+            if (matKhau !== confirmPassword) {
+                showError('Mật khẩu xác nhận không khớp!');
                 return;
             }
             
             // Validate password length
-            if (password.length < 6) {
-                alert('Mật khẩu phải có ít nhất 6 ký tự!');
+            if (matKhau.length < 6) {
+                showError('Mật khẩu phải có ít nhất 6 ký tự!');
                 return;
             }
             
             // Check terms agreement
             if (!terms) {
-                alert('Vui lòng đồng ý với điều khoản sử dụng!');
+                showError('Vui lòng đồng ý với điều khoản sử dụng!');
                 return;
             }
             
-            alert('Đăng ký thành công! Chào mừng bạn đến với Gaming Tournament!');
-            // Redirect to login page
-            window.location.href = 'login.html';
+            // Prepare data for API
+            const apiData = {
+                TenDangNhap: tenDangNhap,
+                HoTen: hoTen,
+                MatKhau: matKhau,
+                VaiTro: vaiTro,
+                MoTa: moTa
+            };
+            
+            showLoading(true);
+            await registerAdmin(apiData);
+            showLoading(false);
+        });
+
+        // Validation on input
+        document.getElementById('tenDangNhap').addEventListener('input', function(e) {
+            const value = e.target.value;
+            if (value.length > 0 && value.length < 3) {
+                e.target.setCustomValidity('Tên đăng nhập phải có ít nhất 3 ký tự');
+            } else {
+                e.target.setCustomValidity('');
+            }
+        });
+
+        document.getElementById('matKhau').addEventListener('input', function(e) {
+            const value = e.target.value;
+            if (value.length > 0 && value.length < 6) {
+                e.target.setCustomValidity('Mật khẩu phải có ít nhất 6 ký tự');
+            } else {
+                e.target.setCustomValidity('');
+            }
+        });
+
+        document.getElementById('confirmPassword').addEventListener('input', function(e) {
+            const password = document.getElementById('matKhau').value;
+            const confirmPassword = e.target.value;
+            
+            if (confirmPassword.length > 0 && password !== confirmPassword) {
+                e.target.setCustomValidity('Mật khẩu xác nhận không khớp');
+            } else {
+                e.target.setCustomValidity('');
+            }
         });
     </script>
 </body>

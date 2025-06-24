@@ -12,21 +12,15 @@
         <div class="nav">
           <a href="index.html">Trang chủ</a>
           <a href="giaidau.html">Giải đấu</a>
-          <div class="dropdown">
-            <a href="#">Đội thi đấu ▾</a>
-            <div class="dropdown-content">
-              <a href="timdoituyen.html">Tìm đội tuyển</a>
-              <a href="taodoituyen.html">Tạo đội tuyển</a>
-            </div>
-          </div>
+          <a href="team.html">Đội thi đấu</a>
           <a href="trandau.html">Trận Đấu</a>
           <a href="xephang.html">Bảng Xếp Hạng</a>
-          <a href="lichsugiaidau.html">Lịch Sử Đấu</a>
           <a href="admin.html">Quản Lý</a>
         </div>
-        <div class="auth-buttons">
-          <a href="login.html" class="login-btn">Đăng nhập</a>
-          <a href="register.html" class="register-btn">Đăng ký</a>
+        <div class="auth-buttons" id="authButtons">
+          <!-- Sẽ được cập nhật bởi JavaScript -->
+          <a href="login.html" class="login-btn" id="loginBtn">Đăng nhập</a>
+          <a href="register.html" class="register-btn" id="registerBtn">Đăng ký</a>
         </div>
     </div>
 
@@ -41,8 +35,7 @@
             <div class="buttons">
               <a href="taogiaidau.html"><button class="btn green">Tạo giải đấu</button></a>
               <a href="giaidau.html"><button class="btn black">Tìm giải đấu</button></a>
-              <a href="taodoituyen.html"><button class="btn black">Tạo đội hình</button></a>
-              <a href="timdoituyen.html"><button class="btn purple">Tìm Kiếm đội</button></a>
+              <a href="team.html"><button class="btn purple">Tìm Kiếm đội</button></a>
             </div>
       
             <div class="stats">
@@ -70,5 +63,92 @@
     <footer class="footer">
         <h1>Nền tảng quản lý giải đấu, đội thi đấu</h1>
     </footer>
+
+    <script>
+        // Kiểm tra trạng thái đăng nhập khi trang được tải
+        window.addEventListener('load', function() {
+            updateAuthButtons();
+        });
+
+        function updateAuthButtons() {
+            const authButtons = document.getElementById('authButtons');
+            const token = localStorage.getItem('adminToken');
+            const user = localStorage.getItem('adminUser');
+
+            if (token && user) {
+                // Người dùng đã đăng nhập
+                const userData = JSON.parse(user);
+                authButtons.innerHTML = `
+                    <div class="user-info" style="display: flex; align-items: center; gap: 10px;">
+                        <span style="color: white; font-size: 14px;">Xin chào, ${userData.HoTen || userData.TenDangNhap}</span>
+                        <button onclick="logout()" class="logout-btn" style="
+                            background: #ff4757;
+                            color: white;
+                            border: none;
+                            padding: 8px 16px;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-size: 14px;
+                            transition: background 0.3s;
+                        " onmouseover="this.style.background='#ff3742'" onmouseout="this.style.background='#ff4757'">
+                            Đăng xuất
+                        </button>
+                    </div>
+                `;
+            } else {
+                // Người dùng chưa đăng nhập
+                authButtons.innerHTML = `
+                    <a href="login.html" class="login-btn">Đăng nhập</a>
+                    <a href="register.html" class="register-btn">Đăng ký</a>
+                `;
+            }
+        }
+
+        function logout() {
+            // Hiển thị xác nhận trước khi đăng xuất
+            if (confirm('Bạn có chắc chắn muốn đăng xuất không?')) {
+                // Xóa thông tin đăng nhập khỏi localStorage
+                localStorage.removeItem('adminToken');
+                localStorage.removeItem('adminUser');
+                
+                // Hiển thị thông báo
+                alert('Đã đăng xuất thành công!');
+                
+                // Cập nhật lại giao diện
+                updateAuthButtons();
+                
+                // Có thể chuyển hướng về trang chủ hoặc trang đăng nhập
+                // window.location.href = 'login.html';
+            }
+        }
+
+        // Kiểm tra token có hết hạn không (tùy chọn)
+        function checkTokenExpiry() {
+            const token = localStorage.getItem('adminToken');
+            if (token) {
+                try {
+                    // Decode JWT token để kiểm tra thời gian hết hạn
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    const currentTime = Date.now() / 1000;
+                    
+                    if (payload.exp < currentTime) {
+                        // Token đã hết hạn
+                        localStorage.removeItem('adminToken');
+                        localStorage.removeItem('adminUser');
+                        updateAuthButtons();
+                        alert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!');
+                    }
+                } catch (error) {
+                    console.error('Error checking token expiry:', error);
+                }
+            }
+        }
+
+        // Kiểm tra token mỗi 5 phút
+        setInterval(checkTokenExpiry, 5 * 60 * 1000);
+        
+        // Kiểm tra token ngay khi trang được tải
+        checkTokenExpiry();
+    </script>
 </body>
 </html>

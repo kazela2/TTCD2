@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đội Tuyển</title>
+    <link rel="stylesheet" href="/CSS/team.css">
+</head>
+<body>
+    <div class="header">
+        <div class="logo">🎮</div>
+        <div class="nav">
+            <a href="index.html">Trang chủ</a>
+            <a href="giaidau.html">Giải đấu</a>
+            <a href="team.html">Đội thi đấu</a>
+            <a href="trandau.html">Trận Đấu</a>
+            <a href="xephang.html">Bảng Xếp Hạng</a>
+            <a href="admin.html">Quản Lý</a>
+        </div>
+        <div class="auth-buttons" id="authButtons">
+            <a href="login.html" class="login-btn" id="loginBtn">Đăng nhập</a>
+            <a href="register.html" class="register-btn" id="registerBtn">Đăng ký</a>
+        </div>
+    </div>
+
+    <div class="search-container">
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="Tìm kiếm Team..." onkeyup="searchTeam()" />
+        </div>
+    </div>
+
+    <div class="card-container" id="teamContainer">
+        <!-- Teams will be loaded here -->
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://127.0.0.1:5000';
+        let teams = [];
+        let tournaments = [];
+        let currentTeamId = null;
+
+        // Load data when page loads
+        window.addEventListener('load', function() {
+            updateAuthButtons();
+            loadTournaments();
+            loadTeams();
+        });
+
+        // Load tournaments for dropdown
+        async function loadTournaments() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/GiaiDau/GetAll`);
+                if (response.ok) {
+                    tournaments = await response.json();
+                    populateTournamentDropdown();
+                }
+            } catch (error) {
+                console.error('Error loading tournaments:', error);
+            }
+        }
+
+        function populateTournamentDropdown() {
+            const select = document.getElementById('idGiai');
+            select.innerHTML = '<option value="">Chọn giải đấu</option>';
+            
+            tournaments.forEach(tournament => {
+                const option = document.createElement('option');
+                option.value = tournament.IdGiai;
+                option.textContent = tournament.TenGiai;
+                select.appendChild(option);
+            });
+        }
+
+        // Load teams
+        async function loadTeams() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/Team/GetAll`);
+                if (response.ok) {
+                    teams = await response.json();
+                    displayTeams(teams);
+                } else {
+                    console.error('Failed to load teams');
+                }
+            } catch (error) {
+                console.error('Error loading teams:', error);
+            }
+        }
+
+        function displayTeams(teamsToShow) {
+            const container = document.getElementById('teamContainer');
+            container.innerHTML = '';
+
+            if (teamsToShow.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: white; font-size: 1.2rem;">Không có team nào</p>';
+                return;
+            }
+
+            teamsToShow.forEach(team => {
+                const card = createTeamCard(team);
+                container.appendChild(card);
+            });
+        }
+
+        function createTeamCard(team) {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.setAttribute('data-ten', team.TenTeam.toLowerCase());
+
+            const logoElement = team.Logo ? 
+                `<img src="${team.Logo}" alt="Logo" class="team-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                 <div class="default-logo" style="display: none;">${team.TenTeam.charAt(0).toUpperCase()}</div>` :
+                `<div class="default-logo">${team.TenTeam.charAt(0).toUpperCase()}</div>`;
+
+            card.innerHTML = `
+                <div class="card-header">
+                    <div>
+                        <h3>${team.TenTeam}</h3>
+                        ${team.TenGiai ? `<div class="tournament-badge">${team.TenGiai}</div>` : ''}
+                    </div>
+                    ${logoElement}
+                </div>
+                <div class="card-info">
+                    <div class="info-item">
+                        <span class="info-label">Captain</span>
+                        <span class="info-value">${team.TenCaptain || 'Chưa có'}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Email</span>
+                        <span class="info-value">${team.EmailLienHe || 'Chưa có'}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Ngày đăng ký</span>
+                        <span class="info-value">${team.NgayDangKy ? new Date(team.NgayDangKy).toLocaleDateString('vi-VN') : 'Chưa có'}</span>
+                    </div>
+                </div>
+                <div class="card-actions">
+                    <button class="btn btn-edit" onclick="editTeam(${team.IdTeam})">Sửa</button>
+                    <button class="btn btn-delete" onclick="deleteTeam(${team.IdTeam})">Xóa</button>
+                </div>
+            `;
+
+            return card;
+        }
+
+        function searchTeam() {
+            const filter = document.getElementById('searchInput').value.toLowerCase();
+            const filteredTeams = teams.filter(team => 
+                team.TenTeam.toLowerCase().includes(filter) ||
+                (team.TenCaptain && team.TenCaptain.toLowerCase().includes(filter)) ||
+                (team.TenGiai && team.TenGiai.toLowerCase().includes(filter))
+            );
+            displayTeams(filteredTeams);
+        }
+    </script>
+    <script>
+        // Kiểm tra trạng thái đăng nhập khi trang được tải
+        window.addEventListener('load', function() {
+            updateAuthButtons();
+        });
+
+        function updateAuthButtons() {
+            const authButtons = document.getElementById('authButtons');
+            const token = localStorage.getItem('adminToken');
+            const user = localStorage.getItem('adminUser');
+
+            if (token && user) {
+                // Người dùng đã đăng nhập
+                const userData = JSON.parse(user);
+                authButtons.innerHTML = `
+                    <div class="user-info" style="display: flex; align-items: center; gap: 10px;">
+                        <span style="color: white; font-size: 14px;">Xin chào, ${userData.HoTen || userData.TenDangNhap}</span>
+                        <button onclick="logout()" class="logout-btn" style="
+                            background: #ff4757;
+                            color: white;
+                            border: none;
+                            padding: 8px 16px;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-size: 14px;
+                            transition: background 0.3s;
+                        " onmouseover="this.style.background='#ff3742'" onmouseout="this.style.background='#ff4757'">
+                            Đăng xuất
+                        </button>
+                    </div>
+                `;
+            } else {
+                // Người dùng chưa đăng nhập
+                authButtons.innerHTML = `
+                    <a href="login.html" class="login-btn">Đăng nhập</a>
+                    <a href="register.html" class="register-btn">Đăng ký</a>
+                `;
+            }
+        }
+
+        
+        function logout() {
+            // Hiển thị xác nhận trước khi đăng xuất
+            if (confirm('Bạn có chắc chắn muốn đăng xuất không?')) {
+                // Xóa thông tin đăng nhập khỏi localStorage
+                localStorage.removeItem('adminToken');
+                localStorage.removeItem('adminUser');
+                
+                // Hiển thị thông báo
+                alert('Đã đăng xuất thành công!');
+                
+                // Cập nhật lại giao diện
+                updateAuthButtons();
+                
+                // Có thể chuyển hướng về trang chủ hoặc trang đăng nhập
+                // window.location.href = 'login.html';
+            }
+        }
+
+        // Kiểm tra token có hết hạn không (tùy chọn)
+        function checkTokenExpiry() {
+            const token = localStorage.getItem('adminToken');
+            if (token) {
+                try {
+                    // Decode JWT token để kiểm tra thời gian hết hạn
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    const currentTime = Date.now() / 1000;
+                    
+                    if (payload.exp < currentTime) {
+                        // Token đã hết hạn
+                        localStorage.removeItem('adminToken');
+                        localStorage.removeItem('adminUser');
+                        updateAuthButtons();
+                        alert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!');
+                    }
+                } catch (error) {
+                    console.error('Error checking token expiry:', error);
+                }
+            }
+        }
+
+        // Kiểm tra token mỗi 5 phút
+        setInterval(checkTokenExpiry, 5 * 60 * 1000);
+        
+        // Kiểm tra token ngay khi trang được tải
+        checkTokenExpiry();
+    </script>
+</body>
+</html>

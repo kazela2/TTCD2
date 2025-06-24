@@ -2,14 +2,15 @@ import flask
 import pyodbc
 from flask import jsonify, request
 from flask_cors import CORS
-
-
-
+import hashlib
+import secrets
+from datetime import datetime, timedelta
+import jwt
 
 conn_str = (
     "Driver={ODBC Driver 17 for SQL Server};"
     "Server=KAZEL;"
-    "Database=QL_GIAIDAUONLINE;"
+    "Database=QL_GIAIDAU_VALORANT;"
     "Trusted_Connection=yes"
 )
 con = pyodbc.connect(conn_str)
@@ -18,118 +19,355 @@ cursor = con.cursor()
 app = flask.Flask(__name__)
 CORS(app)
 
-@app.route('/BangXepHang/GetAll', methods=['GET'])
-def get_bang_xep_hang():
-    cursor = con.cursor()
-    cursor.execute("""
-        SELECT bxh.Idxh, dt.TenDoi, gd.TenGiai, bxh.TranThang, bxh.TranHoa, bxh.TranThua, bxh.Diem, bxh.HieuSo
-        FROM BangXepHang bxh
-        JOIN DoiThiDau dt ON bxh.IdDoi = dt.IdDoi
-        JOIN GiaiDau gd ON bxh.IdGiai = gd.IdGiai
-        ORDER BY bxh.Diem DESC, bxh.HieuSo DESC
-    """)
-    rows = cursor.fetchall()
+# Secret key for JWT (in production, use environment variable)
+app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'
 
-    result = []
-    for row in rows:
-        result.append({
-            "Idxh": row.Idxh,
-            "TenDoi": row.TenDoi,
-            "TenGiai": row.TenGiai,
-            "TranThang": row.TranThang,
-            "TranHoa": row.TranHoa,
-            "TranThua": row.TranThua,
-            "Diem": row.Diem,
-            "HieuSo": row.HieuSo
-        })
+def hash_password(password):
+    """Hash password using SHA-256"""
+    return hashlib.sha256(password.encode()).hexdigest()
 
-    return jsonify(result)
+def verify_password(password, hashed_password):
+    """Verify password against hash"""
+    return hash_password(password) == hashed_password
 
-@app.route('/BangXepHang/Add', methods=['POST'])
-def them_bang_xep_hang():
+def generate_token(user_id, username):
+    """Generate JWT token"""
+    payload = {
+        'user_id': user_id,
+        'username': username,
+        'exp': datetime.utcnow() + timedelta(hours=24)
+    }
+    return jwt.encode(payload, app.config['SECRET_KEY'], algorithm='HS256')
+
+# ===== QUAN TRI ROUTES =====
+
+@app.route('/QuanTri/Register', methods=['POST'])
+def register_admin():
     try:
         data = request.json
-        doi_id = data.get('IdDoi')
-        giai_id = data.get('IdGiai')
-        tran_thang = data.get('TranThang', 0)
-        tran_hoa = data.get('TranHoa', 0)
-        tran_thua = data.get('TranThua', 0)
-        hieu_so = data.get('HieuSo', 0)
-        diem = data.get('Diem', 0)
+        ten_dang_nhap = data.get('TenDangNhap')
+        mat_khau = data.get('MatKhau')
+        ho_ten = data.get('HoTen')
+        vai_tro = data.get('VaiTro', 'Admin')
+        mo_ta = data.get('MoTa', '')
 
-        if not doi_id or not giai_id:
-            return jsonify({'error': 'IdDoi và IdGiai là bắt buộc'}), 400
+        if not ten_dang_nhap or not mat_khau or not ho_ten:
+            return jsonify({'error': 'Tên đăng nhập, mật khẩu và họ tên là bắt buộc'}), 400
+
+        if len(mat_khau) < 6:
+            return jsonify({'error': 'Mật khẩu phải có ít nhất 6 ký tự'}), 400
 
         cursor = con.cursor()
+        
+        # Kiểm tra tên đăng nhập đã tồn tại
+        cursor.execute("SELECT COUNT(*) FROM QuanTri WHERE TenDangNhap = ?", (ten_dang_nhap,))
+        count = cursor.fetchone()[0]
+        if count > 0:
+            return jsonify({'error': 'Tên đăng nhập đã tồn tại'}), 400
+
+        # Hash mật khẩu
+        hashed_password = hash_password(mat_khau)
+
+        # Thêm quản trị viên mới
         query = """
-            INSERT INTO BangXepHang (IdDoi, IdGiai, TranThang, TranHoa, TranThua, HieuSo, Diem)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO QuanTri (TenDangNhap, MatKhau, HoTen, VaiTro, MoTa)
+            VALUES (?, ?, ?, ?, ?)
         """
-        cursor.execute(query, (doi_id, giai_id, tran_thang, tran_hoa, tran_thua, hieu_so, diem))
+        cursor.execute(query, (ten_dang_nhap, hashed_password, ho_ten, vai_tro, mo_ta))
         con.commit()
         cursor.close()
-        return jsonify({'message': '✅ Thêm bảng xếp hạng thành công'}), 201
+
+        return jsonify({'message': 'Đăng ký quản trị viên thành công'}), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/BangXepHang/Delete/<int:id>', methods=['DELETE'])
-def xoa_bang_xep_hang(id):
+@app.route('/QuanTri/Login', methods=['POST'])
+def login_admin():
+    try:
+        data = request.json
+        ten_dang_nhap = data.get('TenDangNhap')
+        mat_khau = data.get('MatKhau')
+
+        if not ten_dang_nhap or not mat_khau:
+            return jsonify({'error': 'Tên đăng nhập và mật khẩu là bắt buộc'}), 400
+
+        cursor = con.cursor()
+        cursor.execute("""
+            SELECT IdQuanTri, TenDangNhap, MatKhau, HoTen, VaiTro 
+            FROM QuanTri 
+            WHERE TenDangNhap = ?
+        """, (ten_dang_nhap,))
+        
+        user = cursor.fetchone()
+        cursor.close()
+
+        if not user:
+            return jsonify({'error': 'Tên đăng nhập không tồn tại'}), 401
+
+        # Verify password
+        if not verify_password(mat_khau, user.MatKhau):
+            return jsonify({'error': 'Mật khẩu không chính xác'}), 401
+
+        # Generate token
+        token = generate_token(user.IdQuanTri, user.TenDangNhap)
+
+        return jsonify({
+            'message': 'Đăng nhập thành công',
+            'token': token,
+            'user': {
+                'IdQuanTri': user.IdQuanTri,
+                'TenDangNhap': user.TenDangNhap,
+                'HoTen': user.HoTen,
+                'VaiTro': user.VaiTro
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/QuanTri/GetAll', methods=['GET'])
+def get_all_quan_tri():
     try:
         cursor = con.cursor()
-        # Kiểm tra xem id có tồn tại không
-        cursor.execute("SELECT COUNT(*) FROM BangXepHang WHERE Idxh = %s", (id,))
-        (count,) = cursor.fetchone()
-        if count == 0:
-            return jsonify({"error": "Bản ghi không tồn tại"}), 404
+        cursor.execute("""
+            SELECT IdQuanTri, TenDangNhap, HoTen, VaiTro, MoTa
+            FROM QuanTri
+            ORDER BY IdQuanTri
+        """)
+        rows = cursor.fetchall()
 
-        # Xóa bản ghi
-        cursor.execute("DELETE FROM BangXepHang WHERE Idxh = %s", (id,))
-        con.commit()
-        return jsonify({"message": "Xóa thành công"}), 200
+        result = []
+        for row in rows:
+            result.append({
+                "IdQuanTri": row.IdQuanTri,
+                "TenDangNhap": row.TenDangNhap,
+                "HoTen": row.HoTen,
+                "VaiTro": row.VaiTro,
+                "MoTa": row.MoTa if row.MoTa else ""
+            })
 
+        return jsonify(result)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({'error': str(e)}), 500
 
+@app.route('/QuanTri/GetById/<int:id_quan_tri>', methods=['GET'])
+def get_quan_tri_by_id(id_quan_tri):
+    try:
+        cursor = con.cursor()
+        cursor.execute("""
+            SELECT IdQuanTri, TenDangNhap, HoTen, VaiTro, MoTa
+            FROM QuanTri
+            WHERE IdQuanTri = ?
+        """, (id_quan_tri,))
+        
+        row = cursor.fetchone()
+        cursor.close()
+
+        if not row:
+            return jsonify({'error': 'Quản trị viên không tồn tại'}), 404
+
+        result = {
+            "IdQuanTri": row.IdQuanTri,
+            "TenDangNhap": row.TenDangNhap,
+            "HoTen": row.HoTen,
+            "VaiTro": row.VaiTro,
+            "MoTa": row.MoTa if row.MoTa else ""
+        }
+
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/QuanTri/Update/<int:id_quan_tri>', methods=['PUT'])
+def update_quan_tri(id_quan_tri):
+    try:
+        data = request.json
+        ho_ten = data.get('HoTen')
+        vai_tro = data.get('VaiTro')
+        mo_ta = data.get('MoTa', '')
+
+        if not ho_ten or not vai_tro:
+            return jsonify({'error': 'Họ tên và vai trò là bắt buộc'}), 400
+
+        cursor = con.cursor()
+        
+        # Kiểm tra quản trị viên có tồn tại không
+        cursor.execute("SELECT COUNT(*) FROM QuanTri WHERE IdQuanTri = ?", (id_quan_tri,))
+        count = cursor.fetchone()[0]
+        if count == 0:
+            return jsonify({'error': 'Quản trị viên không tồn tại'}), 404
+
+        # Cập nhật thông tin
+        query = """
+            UPDATE QuanTri 
+            SET HoTen = ?, VaiTro = ?, MoTa = ?
+            WHERE IdQuanTri = ?
+        """
+        cursor.execute(query, (ho_ten, vai_tro, mo_ta, id_quan_tri))
+        con.commit()
+        cursor.close()
+        
+        return jsonify({'message': 'Cập nhật thông tin quản trị viên thành công'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/QuanTri/ChangePassword/<int:id_quan_tri>', methods=['PUT'])
+def change_password(id_quan_tri):
+    try:
+        data = request.json
+        mat_khau_cu = data.get('MatKhauCu')
+        mat_khau_moi = data.get('MatKhauMoi')
+
+        if not mat_khau_cu or not mat_khau_moi:
+            return jsonify({'error': 'Mật khẩu cũ và mật khẩu mới là bắt buộc'}), 400
+
+        if len(mat_khau_moi) < 6:
+            return jsonify({'error': 'Mật khẩu mới phải có ít nhất 6 ký tự'}), 400
+
+        cursor = con.cursor()
+        
+        # Lấy mật khẩu hiện tại
+        cursor.execute("SELECT MatKhau FROM QuanTri WHERE IdQuanTri = ?", (id_quan_tri,))
+        row = cursor.fetchone()
+        if not row:
+            return jsonify({'error': 'Quản trị viên không tồn tại'}), 404
+
+        # Verify mật khẩu cũ
+        if not verify_password(mat_khau_cu, row.MatKhau):
+            return jsonify({'error': 'Mật khẩu cũ không chính xác'}), 400
+
+        # Hash mật khẩu mới
+        hashed_new_password = hash_password(mat_khau_moi)
+
+        # Cập nhật mật khẩu
+        cursor.execute("UPDATE QuanTri SET MatKhau = ? WHERE IdQuanTri = ?", 
+                      (hashed_new_password, id_quan_tri))
+        con.commit()
+        cursor.close()
+        
+        return jsonify({'message': 'Đổi mật khẩu thành công'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/QuanTri/Delete/<int:id_quan_tri>', methods=['DELETE'])
+def delete_quan_tri(id_quan_tri):
+    try:
+        cursor = con.cursor()
+        
+        # Kiểm tra quản trị viên có tồn tại không
+        cursor.execute("SELECT COUNT(*) FROM QuanTri WHERE IdQuanTri = ?", (id_quan_tri,))
+        count = cursor.fetchone()[0]
+        if count == 0:
+            return jsonify({'error': 'Quản trị viên không tồn tại'}), 404
+
+        # Kiểm tra không được xóa quản trị viên cuối cùng
+        cursor.execute("SELECT COUNT(*) FROM QuanTri")
+        total_count = cursor.fetchone()[0]
+        if total_count <= 1:
+            return jsonify({'error': 'Không thể xóa quản trị viên cuối cùng'}), 400
+
+        # Xóa quản trị viên
+        cursor.execute("DELETE FROM QuanTri WHERE IdQuanTri = ?", (id_quan_tri,))
+        con.commit()
+        cursor.close()
+        
+        return jsonify({'message': 'Xóa quản trị viên thành công'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ===== GIAI DAU ROUTES =====
 
 @app.route('/GiaiDau/GetAll', methods=['GET'])
-def get_giaidau():
-    cursor = con.cursor()
-    cursor.execute("""
-        SELECT IdGiai, TenGiai, NgayBatDau, NgayKetThuc, MoTa 
-        FROM GiaiDau
-    """)
-    rows = cursor.fetchall()
+def get_all_giai_dau():
+    try:
+        cursor = con.cursor()
+        cursor.execute("""
+            SELECT IdGiai, TenGiai, NgayBatDau, NgayKetThuc, SoTeamThamGia, 
+                   GiaiThuong, HinhAnh, MoTa
+            FROM GiaiDau
+            ORDER BY NgayBatDau DESC
+        """)
+        rows = cursor.fetchall()
 
-    result = []
-    for row in rows:
-        result.append({
+        result = []
+        for row in rows:
+            result.append({
+                "IdGiai": row.IdGiai,
+                "TenGiai": row.TenGiai,
+                "NgayBatDau": row.NgayBatDau.strftime('%Y-%m-%d') if row.NgayBatDau else None,
+                "NgayKetThuc": row.NgayKetThuc.strftime('%Y-%m-%d') if row.NgayKetThuc else None,
+                "SoTeamThamGia": row.SoTeamThamGia if row.SoTeamThamGia else 0,
+                "GiaiThuong": float(row.GiaiThuong) if row.GiaiThuong else 0,
+                "HinhAnh": row.HinhAnh if row.HinhAnh else "",
+                "MoTa": row.MoTa if row.MoTa else ""
+            })
+
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/GiaiDau/GetById/<int:id_giai>', methods=['GET'])
+def get_giai_dau_by_id(id_giai):
+    try:
+        cursor = con.cursor()
+        cursor.execute("""
+            SELECT IdGiai, TenGiai, NgayBatDau, NgayKetThuc, SoTeamThamGia, 
+                   GiaiThuong, HinhAnh, MoTa
+            FROM GiaiDau
+            WHERE IdGiai = ?
+        """, (id_giai,))
+        
+        row = cursor.fetchone()
+        cursor.close()
+
+        if not row:
+            return jsonify({'error': 'Giải đấu không tồn tại'}), 404
+
+        result = {
             "IdGiai": row.IdGiai,
             "TenGiai": row.TenGiai,
             "NgayBatDau": row.NgayBatDau.strftime('%Y-%m-%d') if row.NgayBatDau else None,
             "NgayKetThuc": row.NgayKetThuc.strftime('%Y-%m-%d') if row.NgayKetThuc else None,
+            "SoTeamThamGia": row.SoTeamThamGia if row.SoTeamThamGia else 0,
+            "GiaiThuong": float(row.GiaiThuong) if row.GiaiThuong else 0,
+            "HinhAnh": row.HinhAnh if row.HinhAnh else "",
             "MoTa": row.MoTa if row.MoTa else ""
-        })
+        }
 
-    return jsonify(result)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
-@app.route('/GiaiDau/Add', methods=['POST'])
-def tao_giai_dau():
+@app.route('/GiaiDau/Create', methods=['POST'])
+def create_giai_dau():
     try:
         data = request.json
         ten_giai = data.get('TenGiai')
-        ngay_bat_dau = data.get('NgayBatDau')  # 'YYYY-MM-DD'
+        ngay_bat_dau = data.get('NgayBatDau')
         ngay_ket_thuc = data.get('NgayKetThuc')
-        mo_ta = data.get('MoTa')
+        so_team_tham_gia = data.get('SoTeamThamGia', 0)
+        giai_thuong = data.get('GiaiThuong', 0)
+        hinh_anh = data.get('HinhAnh', '')
+        mo_ta = data.get('MoTa', '')
 
         if not ten_giai:
             return jsonify({'error': 'Tên giải đấu là bắt buộc'}), 400
 
         cursor = con.cursor()
+        
+        # Kiểm tra tên giải đấu đã tồn tại
+        cursor.execute("SELECT COUNT(*) FROM GiaiDau WHERE TenGiai = ?", (ten_giai,))
+        count = cursor.fetchone()[0]
+        if count > 0:
+            return jsonify({'error': 'Tên giải đấu đã tồn tại'}), 400
+
+        # Thêm giải đấu mới
         query = """
-            INSERT INTO GiaiDau (TenGiai, NgayBatDau, NgayKetThuc, MoTa)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO GiaiDau (TenGiai, NgayBatDau, NgayKetThuc, SoTeamThamGia, 
+                               GiaiThuong, HinhAnh, MoTa)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         """
-        cursor.execute(query, (ten_giai, ngay_bat_dau, ngay_ket_thuc, mo_ta))
+        cursor.execute(query, (ten_giai, ngay_bat_dau, ngay_ket_thuc, so_team_tham_gia, 
+                              giai_thuong, hinh_anh, mo_ta))
         con.commit()
         cursor.close()
 
@@ -137,11 +375,58 @@ def tao_giai_dau():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/GiaiDau/Update/<int:id_giai>', methods=['PUT'])
+def update_giai_dau(id_giai):
+    try:
+        data = request.json
+        ten_giai = data.get('TenGiai')
+        ngay_bat_dau = data.get('NgayBatDau')
+        ngay_ket_thuc = data.get('NgayKetThuc')
+        so_team_tham_gia = data.get('SoTeamThamGia', 0)
+        giai_thuong = data.get('GiaiThuong', 0)
+        hinh_anh = data.get('HinhAnh', '')
+        mo_ta = data.get('MoTa', '')
+
+        if not ten_giai:
+            return jsonify({'error': 'Tên giải đấu là bắt buộc'}), 400
+
+        cursor = con.cursor()
+        
+        # Kiểm tra giải đấu có tồn tại không
+        cursor.execute("SELECT COUNT(*) FROM GiaiDau WHERE IdGiai = ?", (id_giai,))
+        count = cursor.fetchone()[0]
+        if count == 0:
+            return jsonify({'error': 'Giải đấu không tồn tại'}), 404
+
+        # Kiểm tra tên giải đấu đã tồn tại (trừ chính nó)
+        cursor.execute("SELECT COUNT(*) FROM GiaiDau WHERE TenGiai = ? AND IdGiai != ?", 
+                      (ten_giai, id_giai))
+        count = cursor.fetchone()[0]
+        if count > 0:
+            return jsonify({'error': 'Tên giải đấu đã tồn tại'}), 400
+
+        # Cập nhật thông tin
+        query = """
+            UPDATE GiaiDau 
+            SET TenGiai = ?, NgayBatDau = ?, NgayKetThuc = ?, SoTeamThamGia = ?,
+                GiaiThuong = ?, HinhAnh = ?, MoTa = ?
+            WHERE IdGiai = ?
+        """
+        cursor.execute(query, (ten_giai, ngay_bat_dau, ngay_ket_thuc, so_team_tham_gia,
+                              giai_thuong, hinh_anh, mo_ta, id_giai))
+        con.commit()
+        cursor.close()
+        
+        return jsonify({'message': 'Cập nhật giải đấu thành công'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/GiaiDau/Delete/<int:id_giai>', methods=['DELETE'])
-def xoa_giai_dau(id_giai):
+def delete_giai_dau(id_giai):
     try:
         cursor = con.cursor()
-        # Kiểm tra xem giải đấu có tồn tại không
+        
+        # Kiểm tra giải đấu có tồn tại không
         cursor.execute("SELECT COUNT(*) FROM GiaiDau WHERE IdGiai = ?", (id_giai,))
         count = cursor.fetchone()[0]
         if count == 0:
@@ -151,554 +436,218 @@ def xoa_giai_dau(id_giai):
         cursor.execute("DELETE FROM GiaiDau WHERE IdGiai = ?", (id_giai,))
         con.commit()
         cursor.close()
+        
         return jsonify({'message': 'Xóa giải đấu thành công'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    # ===== TEAM ROUTES =====
 
-
-# Lấy danh sách đội thi đấu kèm tên giải đấu
-@app.route('/DoiThiDau/GetAll', methods=['GET'])
-def get_all_doi_thi_dau():
-    cursor = con.cursor()
-    cursor.execute("""
-        SELECT d.IdDoi, d.TenDoi, d.TenHuanLuyenVien, d.IdGiai, g.TenGiai
-        FROM DoiThiDau d
-        LEFT JOIN GiaiDau g ON d.IdGiai = g.IdGiai
-    """)
-    rows = cursor.fetchall()
-    result = []
-    for row in rows:
-        result.append({
-            'IdDoi': row.IdDoi,
-            'TenDoi': row.TenDoi,
-            'TenHuanLuyenVien': row.TenHuanLuyenVien,
-            'IdGiai': row.IdGiai,
-            'TenGiai': row.TenGiai
-        })
-    return jsonify(result)
-
-
-# Lấy danh sách thành viên theo đội
-@app.route('/ThanhVienDoi/GetByDoi/<int:id_doi>', methods=['GET'])
-def get_thanh_vien_by_doi(id_doi):
-    cursor = con.cursor()
-    cursor.execute("""
-        SELECT IdThanhVien, HoTen, ViTri, SoAo, IdDoi FROM ThanhVienDoi WHERE IdDoi = ?
-    """, (id_doi,))
-    rows = cursor.fetchall()
-    result = []
-    for row in rows:
-        result.append({
-            'IdThanhVien': row.IdThanhVien,
-            'HoTen': row.HoTen,
-            'ViTri': row.ViTri,
-            'SoAo': row.SoAo,
-            'IdDoi': row.IdDoi
-        })
-    return jsonify(result)
-
-@app.route('/DoiThiDau/AddFull', methods=['POST'])
-def add_doi_va_thanhvien():
-    data = request.json
-    ten_doi = data.get('TenDoi')
-    ten_hlv = data.get('TenHuanLuyenVien')
-    id_giai = data.get('IdGiai')
-    thanh_vien_list = data.get('ThanhVien')
-
-    if not ten_doi or not id_giai or not thanh_vien_list:
-        return jsonify({'error': 'Thiếu dữ liệu bắt buộc'}), 400
-
-    cursor = con.cursor()
+@app.route('/Team/GetAll', methods=['GET'])
+def get_all_teams():
     try:
-        # Thêm đội và lấy ID bằng OUTPUT
+        cursor = con.cursor()
         cursor.execute("""
-            INSERT INTO DoiThiDau (TenDoi, TenHuanLuyenVien, IdGiai)
-            OUTPUT INSERTED.IdDoi
-            VALUES (?, ?, ?)
-        """, (ten_doi, ten_hlv, id_giai))
-        
-        id_doi_row = cursor.fetchone()
-        if not id_doi_row or id_doi_row[0] is None:
-            return jsonify({'error': 'Không lấy được ID đội'}), 500
+            SELECT t.IdTeam, t.TenTeam, t.TenCaptain, t.EmailLienHe, t.Logo, 
+                   t.IdGiai, t.NgayDangKy, g.TenGiai
+            FROM Team t
+            LEFT JOIN GiaiDau g ON t.IdGiai = g.IdGiai
+            ORDER BY t.NgayDangKy DESC
+        """)
+        rows = cursor.fetchall()
 
-        id_doi = id_doi_row[0]
-        print("ID đội:", id_doi)  # ✅ Log ra ID để debug
+        result = []
+        for row in rows:
+            result.append({
+                "IdTeam": row.IdTeam,
+                "TenTeam": row.TenTeam,
+                "TenCaptain": row.TenCaptain if row.TenCaptain else "",
+                "EmailLienHe": row.EmailLienHe if row.EmailLienHe else "",
+                "Logo": row.Logo if row.Logo else "",
+                "IdGiai": row.IdGiai if row.IdGiai else None,
+                "TenGiai": row.TenGiai if row.TenGiai else "",
+                "NgayDangKy": row.NgayDangKy.strftime('%Y-%m-%d %H:%M:%S') if row.NgayDangKy else None
+            })
 
-        # Thêm từng thành viên với ID đội
-        for tv in thanh_vien_list:
-            cursor.execute("""
-                INSERT INTO ThanhVienDoi (HoTen, ViTri, SoAo, IdDoi)
-                VALUES (?, ?, ?, ?)
-            """, (tv.get('HoTen'), tv.get('ViTri'), tv.get('SoAo'), id_doi))
-
-        con.commit()
-        return jsonify({'message': 'Thêm đội và thành viên thành công'}), 201
-
+        return jsonify(result)
     except Exception as e:
-        con.rollback()
         return jsonify({'error': str(e)}), 500
 
+@app.route('/Team/GetById/<int:id_team>', methods=['GET'])
+def get_team_by_id(id_team):
+    try:
+        cursor = con.cursor()
+        cursor.execute("""
+            SELECT t.IdTeam, t.TenTeam, t.TenCaptain, t.EmailLienHe, t.Logo, 
+                   t.IdGiai, t.NgayDangKy, g.TenGiai
+            FROM Team t
+            LEFT JOIN GiaiDau g ON t.IdGiai = g.IdGiai
+            WHERE t.IdTeam = ?
+        """, (id_team,))
+        
+        row = cursor.fetchone()
+        cursor.close()
 
-# Lấy tất cả trận đấu kèm thông tin đội và giải đấu
-@app.route('/TranDau/GetAll', methods=['GET'])
-def get_all_tran_dau():
-    cursor = con.cursor()
-    cursor.execute("""
-        SELECT 
-            td.IdTran, 
-            td.IdGiai, 
-            g.TenGiai,
-            td.Doi1, 
-            d1.TenDoi AS TenDoi1,
-            td.Doi2, 
-            d2.TenDoi AS TenDoi2,
-            td.TySo, 
-            td.NgayThiDau, 
-            td.DiaDiem
-        FROM TranDau td
-        LEFT JOIN GiaiDau g ON td.IdGiai = g.IdGiai
-        LEFT JOIN DoiThiDau d1 ON td.Doi1 = d1.IdDoi
-        LEFT JOIN DoiThiDau d2 ON td.Doi2 = d2.IdDoi
-        ORDER BY td.NgayThiDau DESC
-    """)
-    rows = cursor.fetchall()
-    
-    result = []
-    for row in rows:
-        result.append({
-            'IdTran': row.IdTran,
-            'IdGiai': row.IdGiai,
-            'TenGiai': row.TenGiai,
-            'Doi1': row.Doi1,
-            'TenDoi1': row.TenDoi1,
-            'Doi2': row.Doi2,
-            'TenDoi2': row.TenDoi2,
-            'TySo': row.TySo if row.TySo else "",
-            'NgayThiDau': row.NgayThiDau.strftime('%Y-%m-%d') if row.NgayThiDau else None,
-            'DiaDiem': row.DiaDiem if row.DiaDiem else ""
-        })
-    
-    return jsonify(result)
+        if not row:
+            return jsonify({'error': 'Team không tồn tại'}), 404
 
+        result = {
+            "IdTeam": row.IdTeam,
+            "TenTeam": row.TenTeam,
+            "TenCaptain": row.TenCaptain if row.TenCaptain else "",
+            "EmailLienHe": row.EmailLienHe if row.EmailLienHe else "",
+            "Logo": row.Logo if row.Logo else "",
+            "IdGiai": row.IdGiai if row.IdGiai else None,
+            "TenGiai": row.TenGiai if row.TenGiai else "",
+            "NgayDangKy": row.NgayDangKy.strftime('%Y-%m-%d %H:%M:%S') if row.NgayDangKy else None
+        }
 
-# Lấy trận đấu theo giải đấu
-@app.route('/TranDau/GetByGiai/<int:id_giai>', methods=['GET'])
-def get_tran_dau_by_giai(id_giai):
-    cursor = con.cursor()
-    cursor.execute("""
-        SELECT 
-            td.IdTran, 
-            td.IdGiai, 
-            g.TenGiai,
-            td.Doi1, 
-            d1.TenDoi AS TenDoi1,
-            td.Doi2, 
-            d2.TenDoi AS TenDoi2,
-            td.TySo, 
-            td.NgayThiDau, 
-            td.DiaDiem
-        FROM TranDau td
-        LEFT JOIN GiaiDau g ON td.IdGiai = g.IdGiai
-        LEFT JOIN DoiThiDau d1 ON td.Doi1 = d1.IdDoi
-        LEFT JOIN DoiThiDau d2 ON td.Doi2 = d2.IdDoi
-        WHERE td.IdGiai = ?
-        ORDER BY td.NgayThiDau DESC
-    """, (id_giai,))
-    rows = cursor.fetchall()
-    
-    result = []
-    for row in rows:
-        result.append({
-            'IdTran': row.IdTran,
-            'IdGiai': row.IdGiai,
-            'TenGiai': row.TenGiai,
-            'Doi1': row.Doi1,
-            'TenDoi1': row.TenDoi1,
-            'Doi2': row.Doi2,
-            'TenDoi2': row.TenDoi2,
-            'TySo': row.TySo if row.TySo else "",
-            'NgayThiDau': row.NgayThiDau.strftime('%Y-%m-%d') if row.NgayThiDau else None,
-            'DiaDiem': row.DiaDiem if row.DiaDiem else ""
-        })
-    
-    return jsonify(result)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
-
-# Thêm trận đấu mới
-@app.route('/TranDau/Add', methods=['POST'])
-def add_tran_dau():
+@app.route('/Team/Create', methods=['POST'])
+def create_team():
     try:
         data = request.json
+        ten_team = data.get('TenTeam')
+        ten_captain = data.get('TenCaptain', '')
+        email_lien_he = data.get('EmailLienHe', '')
+        logo = data.get('Logo', '')
         id_giai = data.get('IdGiai')
-        doi1 = data.get('Doi1')
-        doi2 = data.get('Doi2')
-        ty_so = data.get('TySo', '')
-        ngay_thi_dau = data.get('NgayThiDau')  # 'YYYY-MM-DD'
-        dia_diem = data.get('DiaDiem', '')
 
-        if not id_giai or not doi1 or not doi2:
-            return jsonify({'error': 'IdGiai, Doi1 và Doi2 là bắt buộc'}), 400
-        
-        if doi1 == doi2:
-            return jsonify({'error': 'Hai đội không thể giống nhau'}), 400
+        if not ten_team:
+            return jsonify({'error': 'Tên team là bắt buộc'}), 400
 
         cursor = con.cursor()
         
-        # Kiểm tra xem các đội có tồn tại và thuộc giải đấu này không
-        cursor.execute("""
-            SELECT COUNT(*) FROM DoiThiDau 
-            WHERE IdDoi IN (?, ?) AND IdGiai = ?
-        """, (doi1, doi2, id_giai))
+        # Kiểm tra tên team đã tồn tại
+        cursor.execute("SELECT COUNT(*) FROM Team WHERE TenTeam = ?", (ten_team,))
         count = cursor.fetchone()[0]
-        
-        if count != 2:
-            return jsonify({'error': 'Một hoặc cả hai đội không thuộc giải đấu này'}), 400
+        if count > 0:
+            return jsonify({'error': 'Tên team đã tồn tại'}), 400
 
-        # Thêm trận đấu
+        # Kiểm tra giải đấu có tồn tại không (nếu có IdGiai)
+        if id_giai:
+            cursor.execute("SELECT COUNT(*) FROM GiaiDau WHERE IdGiai = ?", (id_giai,))
+            count = cursor.fetchone()[0]
+            if count == 0:
+                return jsonify({'error': 'Giải đấu không tồn tại'}), 400
+
+        # Thêm team mới
         query = """
-            INSERT INTO TranDau (IdGiai, Doi1, Doi2, TySo, NgayThiDau, DiaDiem)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO Team (TenTeam, TenCaptain, EmailLienHe, Logo, IdGiai)
+            VALUES (?, ?, ?, ?, ?)
         """
-        cursor.execute(query, (id_giai, doi1, doi2, ty_so, ngay_thi_dau, dia_diem))
+        cursor.execute(query, (ten_team, ten_captain, email_lien_he, logo, id_giai))
         con.commit()
         cursor.close()
 
-        return jsonify({'message': 'Thêm trận đấu thành công'}), 201
+        return jsonify({'message': 'Tạo team thành công'}), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-# Cập nhật tỷ số trận đấu
-@app.route('/TranDau/UpdateScore/<int:id_tran>', methods=['PUT'])
-def update_ty_so(id_tran):
+@app.route('/Team/Update/<int:id_team>', methods=['PUT'])
+def update_team(id_team):
     try:
         data = request.json
-        ty_so = data.get('TySo')
-        
-        if not ty_so:
-            return jsonify({'error': 'Tỷ số là bắt buộc'}), 400
+        ten_team = data.get('TenTeam')
+        ten_captain = data.get('TenCaptain', '')
+        email_lien_he = data.get('EmailLienHe', '')
+        logo = data.get('Logo', '')
+        id_giai = data.get('IdGiai')
+
+        if not ten_team:
+            return jsonify({'error': 'Tên team là bắt buộc'}), 400
 
         cursor = con.cursor()
         
-        # Kiểm tra trận đấu có tồn tại không
-        cursor.execute("SELECT COUNT(*) FROM TranDau WHERE IdTran = ?", (id_tran,))
+        # Kiểm tra team có tồn tại không
+        cursor.execute("SELECT COUNT(*) FROM Team WHERE IdTeam = ?", (id_team,))
         count = cursor.fetchone()[0]
         if count == 0:
-            return jsonify({'error': 'Trận đấu không tồn tại'}), 404
+            return jsonify({'error': 'Team không tồn tại'}), 404
 
-        # Cập nhật tỷ số
-        cursor.execute("UPDATE TranDau SET TySo = ? WHERE IdTran = ?", (ty_so, id_tran))
-        con.commit()
-        cursor.close()
-        
-        return jsonify({'message': 'Cập nhật tỷ số thành công'}), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-# Cập nhật thông tin trận đấu
-@app.route('/TranDau/Update/<int:id_tran>', methods=['PUT'])
-def update_tran_dau(id_tran):
-    try:
-        data = request.json
-        ty_so = data.get('TySo')
-        ngay_thi_dau = data.get('NgayThiDau')
-        dia_diem = data.get('DiaDiem')
-
-        cursor = con.cursor()
-        
-        # Kiểm tra trận đấu có tồn tại không
-        cursor.execute("SELECT COUNT(*) FROM TranDau WHERE IdTran = ?", (id_tran,))
+        # Kiểm tra tên team đã tồn tại (trừ chính nó)
+        cursor.execute("SELECT COUNT(*) FROM Team WHERE TenTeam = ? AND IdTeam != ?", 
+                      (ten_team, id_team))
         count = cursor.fetchone()[0]
-        if count == 0:
-            return jsonify({'error': 'Trận đấu không tồn tại'}), 404
+        if count > 0:
+            return jsonify({'error': 'Tên team đã tồn tại'}), 400
+
+        # Kiểm tra giải đấu có tồn tại không (nếu có IdGiai)
+        if id_giai:
+            cursor.execute("SELECT COUNT(*) FROM GiaiDau WHERE IdGiai = ?", (id_giai,))
+            count = cursor.fetchone()[0]
+            if count == 0:
+                return jsonify({'error': 'Giải đấu không tồn tại'}), 400
 
         # Cập nhật thông tin
         query = """
-            UPDATE TranDau 
-            SET TySo = ?, NgayThiDau = ?, DiaDiem = ?
-            WHERE IdTran = ?
+            UPDATE Team 
+            SET TenTeam = ?, TenCaptain = ?, EmailLienHe = ?, Logo = ?, IdGiai = ?
+            WHERE IdTeam = ?
         """
-        cursor.execute(query, (ty_so, ngay_thi_dau, dia_diem, id_tran))
+        cursor.execute(query, (ten_team, ten_captain, email_lien_he, logo, id_giai, id_team))
         con.commit()
         cursor.close()
         
-        return jsonify({'message': 'Cập nhật trận đấu thành công'}), 200
+        return jsonify({'message': 'Cập nhật team thành công'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-# Xóa trận đấu
-@app.route('/TranDau/Delete/<int:id_tran>', methods=['DELETE'])
-def delete_tran_dau(id_tran):
+@app.route('/Team/Delete/<int:id_team>', methods=['DELETE'])
+def delete_team(id_team):
     try:
         cursor = con.cursor()
         
-        # Kiểm tra trận đấu có tồn tại không
-        cursor.execute("SELECT COUNT(*) FROM TranDau WHERE IdTran = ?", (id_tran,))
+        # Kiểm tra team có tồn tại không
+        cursor.execute("SELECT COUNT(*) FROM Team WHERE IdTeam = ?", (id_team,))
         count = cursor.fetchone()[0]
         if count == 0:
-            return jsonify({'error': 'Trận đấu không tồn tại'}), 404
+            return jsonify({'error': 'Team không tồn tại'}), 404
 
-        # Xóa trận đấu
-        cursor.execute("DELETE FROM TranDau WHERE IdTran = ?", (id_tran,))
+        # Xóa team
+        cursor.execute("DELETE FROM Team WHERE IdTeam = ?", (id_team,))
         con.commit()
         cursor.close()
         
-        return jsonify({'message': 'Xóa trận đấu thành công'}), 200
+        return jsonify({'message': 'Xóa team thành công'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-# Lấy danh sách đội theo giải đấu (để hiển thị trong dropdown)
-@app.route('/DoiThiDau/GetByGiai/<int:id_giai>', methods=['GET'])
-def get_doi_by_giai(id_giai):
-    cursor = con.cursor()
-    cursor.execute("""
-        SELECT IdDoi, TenDoi, TenHuanLuyenVien
-        FROM DoiThiDau 
-        WHERE IdGiai = ?
-        ORDER BY TenDoi
-    """, (id_giai,))
-    rows = cursor.fetchall()
-    
-    result = []
-    for row in rows:
-        result.append({
-            'IdDoi': row.IdDoi,
-            'TenDoi': row.TenDoi,
-            'TenHuanLuyenVien': row.TenHuanLuyenVien
-        })
-    
-    return jsonify(result)
-
-
-@app.route('/LichSuGiaiDau/GetAll', methods=['GET'])
-def get_all_lich_su():
+@app.route('/Team/GetByGiai/<int:id_giai>', methods=['GET'])
+def get_teams_by_giai(id_giai):
     try:
         cursor = con.cursor()
         cursor.execute("""
-            SELECT 
-                ls.Idls, 
-                ls.IdGiai, 
-                g.TenGiai,
-                ls.Nam, 
-                ls.DoiVoDich, 
-                d.TenDoi AS TenDoiVoDich,
-                ls.MoTa
-            FROM LichSuGiaiDau ls
-            LEFT JOIN GiaiDau g ON ls.IdGiai = g.IdGiai
-            LEFT JOIN DoiThiDau d ON ls.DoiVoDich = d.IdDoi
-            ORDER BY ls.Nam DESC
-        """)
-        rows = cursor.fetchall()
-        
-        result = []
-        for row in rows:
-            result.append({
-                'Idls': row.Idls,
-                'IdGiai': row.IdGiai,
-                'TenGiai': row.TenGiai,
-                'Nam': row.Nam,
-                'DoiVoDich': row.DoiVoDich,
-                'TenDoiVoDich': row.TenDoiVoDich,
-                'MoTa': row.MoTa if row.MoTa else ""
-            })
-        
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-    
-    
-@app.route('/LichSuGiaiDau/GetByGiai/<int:id_giai>', methods=['GET'])
-def get_lich_su_by_giai(id_giai):
-    try:
-        cursor = con.cursor()
-        cursor.execute("""
-            SELECT 
-                ls.Idls, 
-                ls.IdGiai, 
-                g.TenGiai,
-                ls.Nam, 
-                ls.DoiVoDich, 
-                d.TenDoi AS TenDoiVoDich,
-                ls.MoTa
-            FROM LichSuGiaiDau ls
-            LEFT JOIN GiaiDau g ON ls.IdGiai = g.IdGiai
-            LEFT JOIN DoiThiDau d ON ls.DoiVoDich = d.IdDoi
-            WHERE ls.IdGiai = ?
-            ORDER BY ls.Nam DESC
+            SELECT t.IdTeam, t.TenTeam, t.TenCaptain, t.EmailLienHe, t.Logo, 
+                   t.IdGiai, t.NgayDangKy, g.TenGiai
+            FROM Team t
+            LEFT JOIN GiaiDau g ON t.IdGiai = g.IdGiai
+            WHERE t.IdGiai = ?
+            ORDER BY t.NgayDangKy DESC
         """, (id_giai,))
         rows = cursor.fetchall()
-        
+
         result = []
         for row in rows:
             result.append({
-                'Idls': row.Idls,
-                'IdGiai': row.IdGiai,
-                'TenGiai': row.TenGiai,
-                'Nam': row.Nam,
-                'DoiVoDich': row.DoiVoDich,
-                'TenDoiVoDich': row.TenDoiVoDich,
-                'MoTa': row.MoTa if row.MoTa else ""
+                "IdTeam": row.IdTeam,
+                "TenTeam": row.TenTeam,
+                "TenCaptain": row.TenCaptain if row.TenCaptain else "",
+                "EmailLienHe": row.EmailLienHe if row.EmailLienHe else "",
+                "Logo": row.Logo if row.Logo else "",
+                "IdGiai": row.IdGiai if row.IdGiai else None,
+                "TenGiai": row.TenGiai if row.TenGiai else "",
+                "NgayDangKy": row.NgayDangKy.strftime('%Y-%m-%d %H:%M:%S') if row.NgayDangKy else None
             })
-        
+
         return jsonify(result)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-    
-@app.route('/LichSuGiaiDau/ThongKe', methods=['GET'])
-def thong_ke_lich_su():
-    try:
-        cursor = con.cursor()
-        cursor.execute("""
-            SELECT 
-                d.TenDoi,
-                COUNT(ls.DoiVoDich) AS SoLanVoDich,
-                MIN(ls.Nam) AS NamDauTien,
-                MAX(ls.Nam) AS NamGanNhat
-            FROM LichSuGiaiDau ls
-            JOIN DoiThiDau d ON ls.DoiVoDich = d.IdDoi
-            GROUP BY d.IdDoi, d.TenDoi
-            ORDER BY SoLanVoDich DESC, NamGanNhat DESC
-        """)
-        rows = cursor.fetchall()
-        
-        result = []
-        for row in rows:
-            result.append({
-                'TenDoi': row.TenDoi,
-                'SoLanVoDich': row.SoLanVoDich,
-                'NamDauTien': row.NamDauTien,
-                'NamGanNhat': row.NamGanNhat
-            })
-        
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-    
-    
-# Thêm lịch sử giải đấu mới
-@app.route('/LichSuGiaiDau/Add', methods=['POST'])
-def add_lich_su():
-    try:
-        data = request.json
-        id_giai = data.get('IdGiai')
-        nam = data.get('Nam')
-        doi_vo_dich = data.get('DoiVoDich')
-        mo_ta = data.get('MoTa', '')
-
-        if not id_giai or not nam or not doi_vo_dich:
-            return jsonify({'error': 'IdGiai, Nam và DoiVoDich là bắt buộc'}), 400
-
-        cursor = con.cursor()
-        
-        # Kiểm tra giải đấu có tồn tại không
-        cursor.execute("SELECT COUNT(*) FROM GiaiDau WHERE IdGiai = ?", (id_giai,))
-        if cursor.fetchone()[0] == 0:
-            return jsonify({'error': 'Giải đấu không tồn tại'}), 404
-            
-        # Kiểm tra đội có tồn tại không
-        cursor.execute("SELECT COUNT(*) FROM DoiThiDau WHERE IdDoi = ?", (doi_vo_dich,))
-        if cursor.fetchone()[0] == 0:
-            return jsonify({'error': 'Đội không tồn tại'}), 404
-            
-        # Kiểm tra đã có lịch sử cho giải và năm này chưa
-        cursor.execute("""
-            SELECT COUNT(*) FROM LichSuGiaiDau 
-            WHERE IdGiai = ? AND Nam = ?
-        """, (id_giai, nam))
-        if cursor.fetchone()[0] > 0:
-            return jsonify({'error': 'Đã có lịch sử cho giải đấu này trong năm ' + str(nam)}), 400
-
-        # Thêm lịch sử
-        cursor.execute("""
-            INSERT INTO LichSuGiaiDau (IdGiai, Nam, DoiVoDich, MoTa)
-            VALUES (?, ?, ?, ?)
-        """, (id_giai, nam, doi_vo_dich, mo_ta))
-        con.commit()
-        cursor.close()
-
-        return jsonify({'message': 'Thêm lịch sử giải đấu thành công'}), 201
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-# Cập nhật lịch sử giải đấu
-@app.route('/LichSuGiaiDau/Update/<int:id_ls>', methods=['PUT'])
-def update_lich_su(id_ls):
-    try:
-        data = request.json
-        nam = data.get('Nam')
-        doi_vo_dich = data.get('DoiVoDich')
-        mo_ta = data.get('MoTa', '')
-
-        cursor = con.cursor()
-        
-        # Kiểm tra lịch sử có tồn tại không
-        cursor.execute("SELECT COUNT(*) FROM LichSuGiaiDau WHERE Idls = ?", (id_ls,))
-        if cursor.fetchone()[0] == 0:
-            return jsonify({'error': 'Lịch sử không tồn tại'}), 404
-            
-        # Kiểm tra đội có tồn tại không (nếu có cập nhật)
-        if doi_vo_dich:
-            cursor.execute("SELECT COUNT(*) FROM DoiThiDau WHERE IdDoi = ?", (doi_vo_dich,))
-            if cursor.fetchone()[0] == 0:
-                return jsonify({'error': 'Đội không tồn tại'}), 404
-
-        # Cập nhật
-        updates = []
-        params = []
-        
-        if nam is not None:
-            updates.append("Nam = ?")
-            params.append(nam)
-        if doi_vo_dich is not None:
-            updates.append("DoiVoDich = ?")
-            params.append(doi_vo_dich)
-        if mo_ta is not None:
-            updates.append("MoTa = ?")
-            params.append(mo_ta)
-            
-        if not updates:
-            return jsonify({'error': 'Không có dữ liệu để cập nhật'}), 400
-            
-        params.append(id_ls)
-        query = f"UPDATE LichSuGiaiDau SET {', '.join(updates)} WHERE Idls = ?"
-        
-        cursor.execute(query, params)
-        con.commit()
-        cursor.close()
-        
-        return jsonify({'message': 'Cập nhật lịch sử thành công'}), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-# Xóa lịch sử giải đấu
-@app.route('/LichSuGiaiDau/Delete/<int:id_ls>', methods=['DELETE'])
-def delete_lich_su(id_ls):
-    try:
-        cursor = con.cursor()
-        
-        # Kiểm tra lịch sử có tồn tại không
-        cursor.execute("SELECT COUNT(*) FROM LichSuGiaiDau WHERE Idls = ?", (id_ls,))
-        if cursor.fetchone()[0] == 0:
-            return jsonify({'error': 'Lịch sử không tồn tại'}), 404
-
-        # Xóa lịch sử
-        cursor.execute("DELETE FROM LichSuGiaiDau WHERE Idls = ?", (id_ls,))
-        con.commit()
-        cursor.close()
-        
-        return jsonify({'message': 'Xóa lịch sử thành công'}), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-    
 # === CHẠY APP ===
 if __name__ == '__main__':
     if con:
         app.run(debug=True)
     else:
         print("❌ Không chạy Flask do kết nối SQL thất bại.")
-

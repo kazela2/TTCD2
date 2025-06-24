@@ -11,14 +11,17 @@
         <div class="login-form">
             <div class="form-header">
                 <div class="logo">🎮</div>
-                <h2>Đăng Nhập</h2>
-                <p>Chào mừng trở lại! Hãy đăng nhập để tiếp tục.</p>
+                <h2>Đăng Nhập Quản Trị</h2>
+                <p>Chào mừng trở lại! Hãy đăng nhập để quản lý giải đấu.</p>
             </div>
+            
+            <div id="errorMessage" class="error-message"></div>
+            <div id="successMessage" class="success-message"></div>
             
             <form id="loginForm">
                 <div class="input-group">
-                    <label for="email">Email hoặc Tên đăng nhập</label>
-                    <input type="text" id="email" name="email" required>
+                    <label for="username">Tên đăng nhập</label>
+                    <input type="text" id="username" name="username" required>
                 </div>
                 
                 <div class="input-group">
@@ -36,7 +39,10 @@
                     <a href="#" class="forgot-password">Quên mật khẩu?</a>
                 </div>
                 
-                <button type="submit" class="login-btn">Đăng Nhập</button>
+                <button type="submit" class="login-btn" id="loginBtn">
+                    <span id="loginText">Đăng Nhập</span>
+                    <span id="loginLoading" class="loading" style="display: none;"></span>
+                </button>
                 
                 <div class="divider">
                     <span>Hoặc đăng nhập với</span>
@@ -61,6 +67,8 @@
     </div>
 
     <script>
+        const API_BASE_URL = 'http://127.0.0.1:5000'; // Thay đổi URL này nếu cần
+
         function togglePassword() {
             const passwordInput = document.getElementById('password');
             const toggleIcon = document.querySelector('.toggle-password');
@@ -74,18 +82,99 @@
             }
         }
 
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            const successDiv = document.getElementById('successMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            successDiv.style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            errorDiv.style.display = 'none';
+        }
+
+        function hideMessages() {
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        function setLoading(loading) {
+            const loginBtn = document.getElementById('loginBtn');
+            const loginText = document.getElementById('loginText');
+            const loginLoading = document.getElementById('loginLoading');
+            
+            if (loading) {
+                loginBtn.disabled = true;
+                loginText.style.display = 'none';
+                loginLoading.style.display = 'inline-block';
+            } else {
+                loginBtn.disabled = false;
+                loginText.style.display = 'inline-block';
+                loginLoading.style.display = 'none';
+            }
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const email = document.getElementById('email').value;
+            const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
             
-            if (email && password) {
-                alert('Đăng nhập thành công!');
-                // Redirect to main page
+            if (!username || !password) {
+                showError('Vui lòng điền đầy đủ thông tin!');
+                return;
+            }
+
+            hideMessages();
+            setLoading(true);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/QuanTri/Login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        TenDangNhap: username,
+                        MatKhau: password
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Lưu token và thông tin user vào localStorage
+                    localStorage.setItem('adminToken', data.token);
+                    localStorage.setItem('adminUser', JSON.stringify(data.user));
+                    
+                    showSuccess('Đăng nhập thành công! Đang chuyển hướng...');
+                    
+                    // Chuyển hướng sau 1.5 giây
+                    setTimeout(() => {
+                        window.location.href = 'index.html'; // Thay đổi trang đích theo ý muốn
+                    }, 1500);
+                } else {
+                    showError(data.error || 'Đăng nhập thất bại');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showError('Lỗi kết nối đến server. Vui lòng thử lại!');
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        // Kiểm tra nếu đã đăng nhập
+        window.addEventListener('load', function() {
+            const token = localStorage.getItem('adminToken');
+            if (token) {
+                // Có thể kiểm tra token còn hạn không ở đây
                 window.location.href = 'index.html';
-            } else {
-                alert('Vui lòng điền đầy đủ thông tin!');
             }
         });
     </script>

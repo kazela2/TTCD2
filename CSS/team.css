@@ -81,7 +81,7 @@ body {
 
 .search-bar {
   max-width: 600px;
-  margin: 0 auto;
+  margin: 0 auto 2rem;
   position: relative;
 }
 
@@ -101,6 +101,25 @@ body {
 .search-bar input:focus {
   transform: translateY(-2px);
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+}
+
+.add-team-btn {
+  background: #4CAF50;
+  color: white;
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 50px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-left: 1rem;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.add-team-btn:hover {
+  background: #45a049;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
 }
 
 .card-container {
@@ -156,13 +175,25 @@ body {
   margin-bottom: 0.5rem;
 }
 
-.prize-badge {
-  background: linear-gradient(135deg, #ffd700, #ffed4e);
-  color: #2c3e50;
-  padding: 0.3rem 0.8rem;
-  border-radius: 20px;
+.team-logo {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #3498db;
+}
+
+.default-logo {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.5rem;
   font-weight: bold;
-  font-size: 0.9rem;
 }
 
 .card-info {
@@ -190,53 +221,53 @@ body {
   font-weight: bold;
 }
 
-.card-description {
-  background: rgba(52, 152, 219, 0.1);
-  padding: 1rem;
-  border-radius: 10px;
-  color: #2c3e50;
-  line-height: 1.6;
-  margin-bottom: 1rem;
-}
-
-.team-count {
-  display: inline-flex;
-  align-items: center;
-  background: #3498db;
+.tournament-badge {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
   color: white;
   padding: 0.3rem 0.8rem;
-  border-radius: 15px;
-  font-size: 0.9rem;
+  border-radius: 20px;
   font-weight: bold;
+  font-size: 0.9rem;
+  display: inline-block;
+  margin-top: 0.5rem;
 }
 
-.play-icon {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 60px;
-  height: 60px;
-  background: rgba(255, 107, 107, 0.9);
-  border-radius: 50%;
+.card-actions {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
   transition: all 0.3s ease;
-  pointer-events: none;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
 }
 
-.card:hover .play-icon {
-  opacity: 1;
-  transform: translate(-50%, -50%) scale(1.1);
-}
-
-.play-icon::after {
-  content: '▶';
+.btn-edit {
+  background: #3498db;
   color: white;
-  font-size: 1.5rem;
-  margin-left: 3px;
+}
+
+.btn-edit:hover {
+  background: #2980b9;
+  transform: translateY(-2px);
+}
+
+.btn-delete {
+  background: #e74c3c;
+  color: white;
+}
+
+.btn-delete:hover {
+  background: #c0392b;
+  transform: translateY(-2px);
 }
 
 /* Modal styles */
@@ -259,7 +290,7 @@ body {
   padding: 0;
   border-radius: 15px;
   width: 90%;
-  max-width: 800px;
+  max-width: 500px;
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
   overflow: hidden;
 }
@@ -294,21 +325,53 @@ body {
   padding: 2rem;
 }
 
-.video-container {
-  position: relative;
-  width: 100%;
-  height: 0;
-  padding-bottom: 56.25%; /* 16:9 aspect ratio */
+.form-group {
   margin-bottom: 1.5rem;
 }
 
-.video-container iframe {
-  position: absolute;
-  top: 0;
-  left: 0;
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+.form-group input, .form-group select {
   width: 100%;
-  height: 100%;
-  border-radius: 10px;
+  padding: 0.8rem;
+  border: 2px solid #ecf0f1;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.form-group input:focus, .form-group select:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.btn-primary {
+  background: #3498db;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #2980b9;
+}
+
+.btn-secondary {
+  background: #95a5a6;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #7f8c8d;
 }
 
 @media (max-width: 768px) {
@@ -324,5 +387,15 @@ body {
   .modal-content {
       width: 95%;
       margin: 10% auto;
+  }
+
+  .search-bar {
+      margin-bottom: 1rem;
+  }
+
+  .add-team-btn {
+      margin-left: 0;
+      margin-top: 1rem;
+      width: 100%;
   }
 }

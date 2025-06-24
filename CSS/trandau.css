@@ -284,3 +284,76 @@ body {
         text-align: center;
     }
 }
+
+/* Auth Buttons Styles */
+.auth-buttons {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  
+  .login-btn, .register-btn {
+    padding: 8px 16px;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+  }
+  
+  .login-btn {
+    color: white;
+    background-color: transparent;
+    border-color: #667eea;
+  }
+  
+  .login-btn:hover {
+    background-color: #667eea;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+  }
+  
+  .register-btn {
+    color: white;
+    background-color: #667eea;
+    border-color: #667eea;
+  }
+  
+  .register-btn:hover {
+    background-color: #764ba2;
+    border-color: #764ba2;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(118, 75, 162, 0.3);
+  }
+  
+  /* Responsive cho auth buttons */
+  @media (max-width: 768px) {
+    .auth-buttons {
+      gap: 8px;
+    }
+    
+    .login-btn, .register-btn {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .header {
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    
+    .nav {
+      order: 3;
+      width: 100%;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    
+    .auth-buttons {
+      order: 2;
+    }
+  }
