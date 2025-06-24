@@ -645,6 +645,351 @@ def get_teams_by_giai(id_giai):
         return jsonify(result)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+    # Thêm các routes cho TranDau vào cuối file Python hiện tại của bạn, trước phần "# === CHẠY APP ==="
+
+# ===== TRAN DAU ROUTES =====
+
+@app.route('/TranDau/GetAll', methods=['GET'])
+def get_all_tran_dau():
+    try:
+        cursor = con.cursor()
+        cursor.execute("""
+            SELECT td.IdTran, td.IdGiai, td.Team1, td.Team2, td.TiSoTeam1, td.TiSoTeam2,
+                   td.NgayThiDau, td.VongDau, td.TrangThai, td.TeamThang, td.GhiChu,
+                   g.TenGiai, t1.TenTeam as TenTeam1, t2.TenTeam as TenTeam2,
+                   tw.TenTeam as TenTeamThang
+            FROM TranDau td
+            LEFT JOIN GiaiDau g ON td.IdGiai = g.IdGiai
+            LEFT JOIN Team t1 ON td.Team1 = t1.IdTeam
+            LEFT JOIN Team t2 ON td.Team2 = t2.IdTeam
+            LEFT JOIN Team tw ON td.TeamThang = tw.IdTeam
+            ORDER BY td.NgayThiDau DESC
+        """)
+        rows = cursor.fetchall()
+
+        result = []
+        for row in rows:
+            result.append({
+                "IdTran": row.IdTran,
+                "IdGiai": row.IdGiai if row.IdGiai else None,
+                "TenGiai": row.TenGiai if row.TenGiai else "",
+                "Team1": row.Team1 if row.Team1 else None,
+                "Team2": row.Team2 if row.Team2 else None,
+                "TenTeam1": row.TenTeam1 if row.TenTeam1 else "",
+                "TenTeam2": row.TenTeam2 if row.TenTeam2 else "",
+                "TiSoTeam1": row.TiSoTeam1 if row.TiSoTeam1 else 0,
+                "TiSoTeam2": row.TiSoTeam2 if row.TiSoTeam2 else 0,
+                "NgayThiDau": row.NgayThiDau.strftime('%Y-%m-%d %H:%M:%S') if row.NgayThiDau else None,
+                "VongDau": row.VongDau if row.VongDau else "",
+                "TrangThai": row.TrangThai if row.TrangThai else "Chưa diễn ra",
+                "TeamThang": row.TeamThang if row.TeamThang else None,
+                "TenTeamThang": row.TenTeamThang if row.TenTeamThang else "",
+                "GhiChu": row.GhiChu if row.GhiChu else ""
+            })
+
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/TranDau/GetById/<int:id_tran>', methods=['GET'])
+def get_tran_dau_by_id(id_tran):
+    try:
+        cursor = con.cursor()
+        cursor.execute("""
+            SELECT td.IdTran, td.IdGiai, td.Team1, td.Team2, td.TiSoTeam1, td.TiSoTeam2,
+                   td.NgayThiDau, td.VongDau, td.TrangThai, td.TeamThang, td.GhiChu,
+                   g.TenGiai, t1.TenTeam as TenTeam1, t2.TenTeam as TenTeam2,
+                   tw.TenTeam as TenTeamThang
+            FROM TranDau td
+            LEFT JOIN GiaiDau g ON td.IdGiai = g.IdGiai
+            LEFT JOIN Team t1 ON td.Team1 = t1.IdTeam
+            LEFT JOIN Team t2 ON td.Team2 = t2.IdTeam
+            LEFT JOIN Team tw ON td.TeamThang = tw.IdTeam
+            WHERE td.IdTran = ?
+        """, (id_tran,))
+        
+        row = cursor.fetchone()
+        cursor.close()
+
+        if not row:
+            return jsonify({'error': 'Trận đấu không tồn tại'}), 404
+
+        result = {
+            "IdTran": row.IdTran,
+            "IdGiai": row.IdGiai if row.IdGiai else None,
+            "TenGiai": row.TenGiai if row.TenGiai else "",
+            "Team1": row.Team1 if row.Team1 else None,
+            "Team2": row.Team2 if row.Team2 else None,
+            "TenTeam1": row.TenTeam1 if row.TenTeam1 else "",
+            "TenTeam2": row.TenTeam2 if row.TenTeam2 else "",
+            "TiSoTeam1": row.TiSoTeam1 if row.TiSoTeam1 else 0,
+            "TiSoTeam2": row.TiSoTeam2 if row.TiSoTeam2 else 0,
+            "NgayThiDau": row.NgayThiDau.strftime('%Y-%m-%d %H:%M:%S') if row.NgayThiDau else None,
+            "VongDau": row.VongDau if row.VongDau else "",
+            "TrangThai": row.TrangThai if row.TrangThai else "Chưa diễn ra",
+            "TeamThang": row.TeamThang if row.TeamThang else None,
+            "TenTeamThang": row.TenTeamThang if row.TenTeamThang else "",
+            "GhiChu": row.GhiChu if row.GhiChu else ""
+        }
+
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/TranDau/Create', methods=['POST'])
+def create_tran_dau():
+    try:
+        data = request.json
+        id_giai = data.get('IdGiai')
+        team1 = data.get('Team1')
+        team2 = data.get('Team2')
+        ngay_thi_dau = data.get('NgayThiDau')
+        vong_dau = data.get('VongDau', '')
+        ghi_chu = data.get('GhiChu', '')
+
+        if not id_giai or not team1 or not team2:
+            return jsonify({'error': 'Giải đấu và hai đội thi đấu là bắt buộc'}), 400
+
+        if team1 == team2:
+            return jsonify({'error': 'Hai đội thi đấu không thể giống nhau'}), 400
+
+        cursor = con.cursor()
+        
+        # Kiểm tra giải đấu có tồn tại không
+        cursor.execute("SELECT COUNT(*) FROM GiaiDau WHERE IdGiai = ?", (id_giai,))
+        count = cursor.fetchone()[0]
+        if count == 0:
+            return jsonify({'error': 'Giải đấu không tồn tại'}), 400
+
+        # Kiểm tra team có tồn tại không
+        cursor.execute("SELECT COUNT(*) FROM Team WHERE IdTeam = ?", (team1,))
+        count = cursor.fetchone()[0]
+        if count == 0:
+            return jsonify({'error': 'Team 1 không tồn tại'}), 400
+
+        cursor.execute("SELECT COUNT(*) FROM Team WHERE IdTeam = ?", (team2,))
+        count = cursor.fetchone()[0]
+        if count == 0:
+            return jsonify({'error': 'Team 2 không tồn tại'}), 400
+
+        # Thêm trận đấu mới
+        query = """
+            INSERT INTO TranDau (IdGiai, Team1, Team2, NgayThiDau, VongDau, GhiChu)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """
+        cursor.execute(query, (id_giai, team1, team2, ngay_thi_dau, vong_dau, ghi_chu))
+        con.commit()
+        cursor.close()
+
+        return jsonify({'message': 'Tạo trận đấu thành công'}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/TranDau/Update/<int:id_tran>', methods=['PUT'])
+def update_tran_dau(id_tran):
+    try:
+        data = request.json
+        id_giai = data.get('IdGiai')
+        team1 = data.get('Team1')
+        team2 = data.get('Team2')
+        ti_so_team1 = data.get('TiSoTeam1', 0)
+        ti_so_team2 = data.get('TiSoTeam2', 0)
+        ngay_thi_dau = data.get('NgayThiDau')
+        vong_dau = data.get('VongDau', '')
+        trang_thai = data.get('TrangThai', 'Chưa diễn ra')
+        team_thang = data.get('TeamThang')
+        ghi_chu = data.get('GhiChu', '')
+
+        if not id_giai or not team1 or not team2:
+            return jsonify({'error': 'Giải đấu và hai đội thi đấu là bắt buộc'}), 400
+
+        if team1 == team2:
+            return jsonify({'error': 'Hai đội thi đấu không thể giống nhau'}), 400
+
+        cursor = con.cursor()
+        
+        # Kiểm tra trận đấu có tồn tại không
+        cursor.execute("SELECT COUNT(*) FROM TranDau WHERE IdTran = ?", (id_tran,))
+        count = cursor.fetchone()[0]
+        if count == 0:
+            return jsonify({'error': 'Trận đấu không tồn tại'}), 404
+
+        # Kiểm tra giải đấu có tồn tại không
+        cursor.execute("SELECT COUNT(*) FROM GiaiDau WHERE IdGiai = ?", (id_giai,))
+        count = cursor.fetchone()[0]
+        if count == 0:
+            return jsonify({'error': 'Giải đấu không tồn tại'}), 400
+
+        # Kiểm tra team có tồn tại không
+        cursor.execute("SELECT COUNT(*) FROM Team WHERE IdTeam = ?", (team1,))
+        count = cursor.fetchone()[0]
+        if count == 0:
+            return jsonify({'error': 'Team 1 không tồn tại'}), 400
+
+        cursor.execute("SELECT COUNT(*) FROM Team WHERE IdTeam = ?", (team2,))
+        count = cursor.fetchone()[0]
+        if count == 0:
+            return jsonify({'error': 'Team 2 không tồn tại'}), 400
+
+        # Cập nhật thông tin
+        query = """
+            UPDATE TranDau 
+            SET IdGiai = ?, Team1 = ?, Team2 = ?, TiSoTeam1 = ?, TiSoTeam2 = ?,
+                NgayThiDau = ?, VongDau = ?, TrangThai = ?, TeamThang = ?, GhiChu = ?
+            WHERE IdTran = ?
+        """
+        cursor.execute(query, (id_giai, team1, team2, ti_so_team1, ti_so_team2,
+                              ngay_thi_dau, vong_dau, trang_thai, team_thang, ghi_chu, id_tran))
+        con.commit()
+        cursor.close()
+        
+        return jsonify({'message': 'Cập nhật trận đấu thành công'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/TranDau/UpdateScore/<int:id_tran>', methods=['PUT'])
+def update_tran_dau_score(id_tran):
+    try:
+        data = request.json
+        ti_so_team1 = data.get('TiSoTeam1', 0)
+        ti_so_team2 = data.get('TiSoTeam2', 0)
+        trang_thai = data.get('TrangThai', 'Đã kết thúc')
+
+        cursor = con.cursor()
+        
+        # Kiểm tra trận đấu có tồn tại không
+        cursor.execute("SELECT Team1, Team2 FROM TranDau WHERE IdTran = ?", (id_tran,))
+        row = cursor.fetchone()
+        if not row:
+            return jsonify({'error': 'Trận đấu không tồn tại'}), 404
+
+        # Xác định team thắng
+        team_thang = None
+        if ti_so_team1 > ti_so_team2:
+            team_thang = row.Team1
+        elif ti_so_team2 > ti_so_team1:
+            team_thang = row.Team2
+
+        # Cập nhật tỷ số và team thắng
+        query = """
+            UPDATE TranDau 
+            SET TiSoTeam1 = ?, TiSoTeam2 = ?, TrangThai = ?, TeamThang = ?
+            WHERE IdTran = ?
+        """
+        cursor.execute(query, (ti_so_team1, ti_so_team2, trang_thai, team_thang, id_tran))
+        con.commit()
+        cursor.close()
+        
+        return jsonify({'message': 'Cập nhật tỷ số thành công'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/TranDau/Delete/<int:id_tran>', methods=['DELETE'])
+def delete_tran_dau(id_tran):
+    try:
+        cursor = con.cursor()
+        
+        # Kiểm tra trận đấu có tồn tại không
+        cursor.execute("SELECT COUNT(*) FROM TranDau WHERE IdTran = ?", (id_tran,))
+        count = cursor.fetchone()[0]
+        if count == 0:
+            return jsonify({'error': 'Trận đấu không tồn tại'}), 404
+
+        # Xóa trận đấu
+        cursor.execute("DELETE FROM TranDau WHERE IdTran = ?", (id_tran,))
+        con.commit()
+        cursor.close()
+        
+        return jsonify({'message': 'Xóa trận đấu thành công'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/TranDau/GetByGiai/<int:id_giai>', methods=['GET'])
+def get_tran_dau_by_giai(id_giai):
+    try:
+        cursor = con.cursor()
+        cursor.execute("""
+            SELECT td.IdTran, td.IdGiai, td.Team1, td.Team2, td.TiSoTeam1, td.TiSoTeam2,
+                   td.NgayThiDau, td.VongDau, td.TrangThai, td.TeamThang, td.GhiChu,
+                   g.TenGiai, t1.TenTeam as TenTeam1, t2.TenTeam as TenTeam2,
+                   tw.TenTeam as TenTeamThang
+            FROM TranDau td
+            LEFT JOIN GiaiDau g ON td.IdGiai = g.IdGiai
+            LEFT JOIN Team t1 ON td.Team1 = t1.IdTeam
+            LEFT JOIN Team t2 ON td.Team2 = t2.IdTeam
+            LEFT JOIN Team tw ON td.TeamThang = tw.IdTeam
+            WHERE td.IdGiai = ?
+            ORDER BY td.NgayThiDau DESC
+        """, (id_giai,))
+        rows = cursor.fetchall()
+
+        result = []
+        for row in rows:
+            result.append({
+                "IdTran": row.IdTran,
+                "IdGiai": row.IdGiai if row.IdGiai else None,
+                "TenGiai": row.TenGiai if row.TenGiai else "",
+                "Team1": row.Team1 if row.Team1 else None,
+                "Team2": row.Team2 if row.Team2 else None,
+                "TenTeam1": row.TenTeam1 if row.TenTeam1 else "",
+                "TenTeam2": row.TenTeam2 if row.TenTeam2 else "",
+                "TiSoTeam1": row.TiSoTeam1 if row.TiSoTeam1 else 0,
+                "TiSoTeam2": row.TiSoTeam2 if row.TiSoTeam2 else 0,
+                "NgayThiDau": row.NgayThiDau.strftime('%Y-%m-%d %H:%M:%S') if row.NgayThiDau else None,
+                "VongDau": row.VongDau if row.VongDau else "",
+                "TrangThai": row.TrangThai if row.TrangThai else "Chưa diễn ra",
+                "TeamThang": row.TeamThang if row.TeamThang else None,
+                "TenTeamThang": row.TenTeamThang if row.TenTeamThang else "",
+                "GhiChu": row.GhiChu if row.GhiChu else ""
+            })
+
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/TranDau/GetByVongDau/<vong_dau>', methods=['GET'])
+def get_tran_dau_by_vong(vong_dau):
+    try:
+        cursor = con.cursor()
+        cursor.execute("""
+            SELECT td.IdTran, td.IdGiai, td.Team1, td.Team2, td.TiSoTeam1, td.TiSoTeam2,
+                   td.NgayThiDau, td.VongDau, td.TrangThai, td.TeamThang, td.GhiChu,
+                   g.TenGiai, t1.TenTeam as TenTeam1, t2.TenTeam as TenTeam2,
+                   tw.TenTeam as TenTeamThang
+            FROM TranDau td
+            LEFT JOIN GiaiDau g ON td.IdGiai = g.IdGiai
+            LEFT JOIN Team t1 ON td.Team1 = t1.IdTeam
+            LEFT JOIN Team t2 ON td.Team2 = t2.IdTeam
+            LEFT JOIN Team tw ON td.TeamThang = tw.IdTeam
+            WHERE td.VongDau = ?
+            ORDER BY td.NgayThiDau DESC
+        """, (vong_dau,))
+        rows = cursor.fetchall()
+
+        result = []
+        for row in rows:
+            result.append({
+                "IdTran": row.IdTran,
+                "IdGiai": row.IdGiai if row.IdGiai else None,
+                "TenGiai": row.TenGiai if row.TenGiai else "",
+                "Team1": row.Team1 if row.Team1 else None,
+                "Team2": row.Team2 if row.Team2 else None,
+                "TenTeam1": row.TenTeam1 if row.TenTeam1 else "",
+                "TenTeam2": row.TenTeam2 if row.TenTeam2 else "",
+                "TiSoTeam1": row.TiSoTeam1 if row.TiSoTeam1 else 0,
+                "TiSoTeam2": row.TiSoTeam2 if row.TiSoTeam2 else 0,
+                "NgayThiDau": row.NgayThiDau.strftime('%Y-%m-%d %H:%M:%S') if row.NgayThiDau else None,
+                "VongDau": row.VongDau if row.VongDau else "",
+                "TrangThai": row.TrangThai if row.TrangThai else "Chưa diễn ra",
+                "TeamThang": row.TeamThang if row.TeamThang else None,
+                "TenTeamThang": row.TenTeamThang if row.TenTeamThang else "",
+                "GhiChu": row.GhiChu if row.GhiChu else ""
+            })
+
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 # === CHẠY APP ===
 if __name__ == '__main__':
     if con:
