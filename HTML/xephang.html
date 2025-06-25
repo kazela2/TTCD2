@@ -4,73 +4,280 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Bảng Xếp Hạng</title>
-  <link rel="stylesheet" href="/CSS/xephang.css" />
+  <link rel="stylesheet" href="/CSS/xephang.css">
 </head>
 <body>
-      <div class="header">
-        <div class="logo">🎮 VALORANT</div>
-        <div class="nav">
-          <a href="index.html">Trang chủ</a>
-          <a href="giaidau.html">Giải đấu</a>
-          <a href="team.html">Team</a>
-          <a href="trandau.html">Trận Đấu</a>
-          <a href="xephang.html">Bảng Xếp Hạng</a>
-          <a href="map.html">Map</a>
-          <a href="admin.html">Quản Lý</a>
-        </div>
-        <div class="auth-buttons" id="authButtons">
-          <!-- Sẽ được cập nhật bởi JavaScript -->
-          <a href="login.html" class="login-btn" id="loginBtn">Đăng nhập</a>
-          <a href="register.html" class="register-btn" id="registerBtn">Đăng ký</a>
-        </div>
+  <div class="header">
+    <div class="logo">🎮 VALORANT</div>
+    <div class="nav">
+      <a href="index.html">Trang chủ</a>
+      <a href="giaidau.html">Giải đấu</a>
+      <a href="team.html">Team</a>
+      <a href="trandau.html">Trận Đấu</a>
+      <a href="xephang.html" class="active">Bảng Xếp Hạng</a>
+      <a href="map.html">Map</a>
+      <a href="admin.html">Quản Lý</a>
     </div>
+    <div class="auth-buttons" id="authButtons">
+      <a href="login.html" class="login-btn" id="loginBtn">Đăng nhập</a>
+      <a href="register.html" class="register-btn" id="registerBtn">Đăng ký</a>
+    </div>
+  </div>
 
   <div class="container">
-    <h2>Bảng Xếp Hạng</h2>
-    <div class="ranking-grid" id="rankingGrid">
-      <!-- Dữ liệu bảng xếp hạng sẽ được hiển thị tại đây -->
+    <h1 class="page-title">🏆 Bảng Xếp Hạng</h1>
+    <p class="page-subtitle">Theo dõi thứ hạng của các đội tuyển trong từng giải đấu</p>
+
+    <div class="filters">
+      <div class="filter-group">
+        <label for="giaiSelect">Chọn Giải Đấu:</label>
+        <select id="giaiSelect">
+          <option value="">Tất cả giải đấu</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="sortSelect">Sắp xếp theo:</label>
+        <select id="sortSelect">
+          <option value="points">Điểm số</option>
+          <option value="matches">Số trận đã chơi</option>
+          <option value="wins">Số trận thắng</option>
+          <option value="winrate">Tỷ lệ thắng</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="loadingMessage" class="loading">
+      🔄 Đang tải dữ liệu...
+    </div>
+
+    <div id="errorMessage" class="error" style="display: none;"></div>
+
+    <div id="rankingContainer"></div>
+
+    <div id="noDataMessage" class="no-data" style="display: none;">
+      📊 Chưa có dữ liệu bảng xếp hạng
     </div>
   </div>
 
   <script>
-    fetch('http://localhost:5000/BangXepHang/GetAll')
-      .then(response => {
-        if (!response.ok) {
-          throw new Error("Không thể lấy dữ liệu từ server");
-        }
-        return response.json();
-      })
-      .then(data => {
-        const grid = document.getElementById('rankingGrid');
-        grid.innerHTML = ''; // Clear nếu có sẵn
+    let allRankingData = [];
+    let tournaments = [];
 
-        if (!data || data.length === 0) {
-          grid.innerHTML = '<p>Không có dữ liệu xếp hạng.</p>';
-          return;
-        }
+    // API Base URL
+    const API_BASE_URL = 'http://localhost:5000'; // Thay đổi theo URL API của bạn
 
-        data.forEach((item, index) => {
-          const card = document.createElement('div');
-          card.className = 'ranking-card';
-          card.innerHTML = `
-            <div class="rank">#${index + 1}</div>
-            <div><strong>Đội:</strong> ${item.TenDoi ?? item.IdDoi ?? 'Không rõ'}</div>
-            <div><strong>Giải:</strong> ${item.TenGiai ?? item.IdGiai ?? 'Không rõ'}</div>
-            <div><strong>Trận:</strong> ${item.SoTran ?? '0'}</div>
-            <div><strong>Thắng:</strong> ${item.SoTranThang ?? item.TranThang ?? '0'}</div>
-            <div><strong>Hòa:</strong> ${item.SoTranHoa ?? item.TranHoa ?? '0'}</div>
-            <div><strong>Thua:</strong> ${item.SoTranThua ?? item.TranThua ?? '0'}</div>
-            <div><strong>Hiệu số:</strong> ${item.HieuSo ?? '0'}</div>
-            <div><strong>Điểm:</strong> ${item.Diem ?? '0'}</div>
-          `;
-          grid.appendChild(card);
-        });
-      })
-      .catch(error => {
-        console.error('Lỗi khi load dữ liệu:', error);
-        const grid = document.getElementById('rankingGrid');
-        grid.innerHTML = `<p class="error">❌ Lỗi khi tải dữ liệu: ${error.message}</p>`;
+    // Khởi tạo trang
+    document.addEventListener('DOMContentLoaded', function() {
+      loadTournaments();
+      loadRankingData();
+      
+      // Event listeners
+      document.getElementById('giaiSelect').addEventListener('change', filterRankings);
+      document.getElementById('sortSelect').addEventListener('change', filterRankings);
+    });
+
+    // Tải danh sách giải đấu
+    async function loadTournaments() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/GiaiDau/GetAll`);
+        if (response.ok) {
+          tournaments = await response.json();
+          populateTournamentSelect();
+        }
+      } catch (error) {
+        console.error('Lỗi khi tải danh sách giải đấu:', error);
+      }
+    }
+
+    // Điền danh sách giải đấu vào select
+    function populateTournamentSelect() {
+      const select = document.getElementById('giaiSelect');
+      select.innerHTML = '<option value="">Tất cả giải đấu</option>';
+      
+      tournaments.forEach(tournament => {
+        const option = document.createElement('option');
+        option.value = tournament.IdGiai;
+        option.textContent = tournament.TenGiai;
+        select.appendChild(option);
       });
+    }
+
+    // Tải dữ liệu bảng xếp hạng
+    async function loadRankingData() {
+      try {
+        showLoading(true);
+        const response = await fetch(`${API_BASE_URL}/BangXepHang/GetAll`);
+        
+        if (response.ok) {
+          allRankingData = await response.json();
+          filterRankings();
+        } else {
+          throw new Error('Không thể tải dữ liệu');
+        }
+      } catch (error) {
+        showError('Lỗi khi tải dữ liệu bảng xếp hạng: ' + error.message);
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    // Lọc và hiển thị bảng xếp hạng
+    function filterRankings() {
+      const selectedTournament = document.getElementById('giaiSelect').value;
+      const sortBy = document.getElementById('sortSelect').value;
+
+      let filteredData = allRankingData;
+
+      // Lọc theo giải đấu
+      if (selectedTournament) {
+        filteredData = filteredData.filter(item => item.IdGiai == selectedTournament);
+      }
+
+      // Sắp xếp dữ liệu
+      filteredData = sortRankingData(filteredData, sortBy);
+
+      // Nhóm theo giải đấu
+      const groupedData = groupByTournament(filteredData);
+      
+      displayRankings(groupedData);
+    }
+
+    // Sắp xếp dữ liệu
+    function sortRankingData(data, sortBy) {
+      return data.sort((a, b) => {
+        switch (sortBy) {
+          case 'points':
+            return b.Diem - a.Diem;
+          case 'matches':
+            return b.TranDa - a.TranDa;
+          case 'wins':
+            return b.TranThang - a.TranThang;
+          case 'winrate':
+            const winRateA = a.TranDa > 0 ? (a.TranThang / a.TranDa) : 0;
+            const winRateB = b.TranDa > 0 ? (b.TranThang / b.TranDa) : 0;
+            return winRateB - winRateA;
+          default:
+            return b.Diem - a.Diem;
+        }
+      });
+    }
+
+    // Nhóm dữ liệu theo giải đấu
+    function groupByTournament(data) {
+      const grouped = {};
+      data.forEach(item => {
+        const tournamentName = item.TenGiai || 'Chưa xác định';
+        if (!grouped[tournamentName]) {
+          grouped[tournamentName] = [];
+        }
+        grouped[tournamentName].push(item);
+      });
+      return grouped;
+    }
+
+    // Hiển thị bảng xếp hạng
+    function displayRankings(groupedData) {
+      const container = document.getElementById('rankingContainer');
+      const noDataMessage = document.getElementById('noDataMessage');
+
+      if (Object.keys(groupedData).length === 0) {
+        container.innerHTML = '';
+        noDataMessage.style.display = 'block';
+        return;
+      }
+
+      noDataMessage.style.display = 'none';
+      let html = '';
+
+      Object.entries(groupedData).forEach(([tournamentName, rankings]) => {
+        html += createTournamentTable(tournamentName, rankings);
+      });
+
+      container.innerHTML = html;
+    }
+
+    // Tạo bảng cho từng giải đấu
+    function createTournamentTable(tournamentName, rankings) {
+      let html = `
+        <div class="ranking-table">
+          <div class="table-header">
+            ${tournamentName}
+          </div>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Hạng</th>
+                <th>Đội</th>
+                <th>Trận</th>
+                <th>Thắng</th>
+                <th>Thua</th>
+                <th>Tỷ lệ Map</th>
+                <th>Điểm</th>
+                <th>Tỷ lệ thắng</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+
+      rankings.forEach((team, index) => {
+        const rank = index + 1;
+        const winRate = team.TranDa > 0 ? ((team.TranThang / team.TranDa) * 100).toFixed(1) : '0.0';
+        const rankClass = getRankClass(rank);
+
+        html += `
+          <tr>
+            <td class="rank-position ${rankClass}">${rank}</td>
+            <td>
+              <div class="team-info">
+                <div class="team-logo">${team.TenTeam ? team.TenTeam.charAt(0).toUpperCase() : 'T'}</div>
+                <div class="team-name">${team.TenTeam || 'Chưa có tên'}</div>
+              </div>
+            </td>
+            <td>${team.TranDa}</td>
+            <td style="color: #4caf50; font-weight: 600;">${team.TranThang}</td>
+            <td style="color: #f44336; font-weight: 600;">${team.TranThua}</td>
+            <td class="map-ratio">${team.TiLe}</td>
+            <td class="points">${team.Diem}</td>
+            <td class="win-rate">${winRate}%</td>
+          </tr>
+        `;
+      });
+
+      html += `
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      return html;
+    }
+
+    // Lấy class CSS cho thứ hạng
+    function getRankClass(rank) {
+      switch (rank) {
+        case 1: return 'rank-1';
+        case 2: return 'rank-2';
+        case 3: return 'rank-3';
+        default: return '';
+      }
+    }
+
+    // Hiển thị loading
+    function showLoading(show) {
+      const loading = document.getElementById('loadingMessage');
+      loading.style.display = show ? 'block' : 'none';
+    }
+
+    // Hiển thị lỗi
+    function showError(message) {
+      const errorDiv = document.getElementById('errorMessage');
+      errorDiv.textContent = message;
+      errorDiv.style.display = 'block';
+      
+      setTimeout(() => {
+        errorDiv.style.display = 'none';
+      }, 5000);
+    }
   </script>
 </body>
 </html>

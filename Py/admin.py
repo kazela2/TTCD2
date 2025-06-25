@@ -1090,6 +1090,124 @@ def get_matches_by_map(id_map):
         return jsonify({'error': str(e)}), 500
     
     
+    
+# ===== BANG XEP HANG ROUTES =====
+
+@app.route('/BangXepHang/GetAll', methods=['GET'])
+def get_all_bang_xep_hang():
+    try:
+        cursor = con.cursor()
+        cursor.execute("""
+            SELECT bxh.IdXH, bxh.IdGiai, bxh.IdTeam, bxh.TranDa, bxh.TranThang, 
+                   bxh.TranThua, bxh.MapThang, bxh.MapThua, bxh.Diem, bxh.HangHienTai,
+                   g.TenGiai, t.TenTeam
+            FROM BangXepHang bxh
+            LEFT JOIN GiaiDau g ON bxh.IdGiai = g.IdGiai
+            LEFT JOIN Team t ON bxh.IdTeam = t.IdTeam
+            ORDER BY bxh.IdGiai, bxh.Diem DESC, bxh.HangHienTai
+        """)
+        rows = cursor.fetchall()
+
+        result = []
+        for row in rows:
+            result.append({
+                "IdXH": row.IdXH,
+                "IdGiai": row.IdGiai if row.IdGiai else None,
+                "TenGiai": row.TenGiai if row.TenGiai else "",
+                "IdTeam": row.IdTeam if row.IdTeam else None,
+                "TenTeam": row.TenTeam if row.TenTeam else "",
+                "TranDa": row.TranDa if row.TranDa else 0,
+                "TranThang": row.TranThang if row.TranThang else 0,
+                "TranThua": row.TranThua if row.TranThua else 0,
+                "MapThang": row.MapThang if row.MapThang else 0,
+                "MapThua": row.MapThua if row.MapThua else 0,
+                "Diem": row.Diem if row.Diem else 0,
+                "HangHienTai": row.HangHienTai if row.HangHienTai else 0,
+                "TiLe": f"{row.MapThang}/{row.MapThua}" if row.MapThang and row.MapThua else "0/0"
+            })
+
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/BangXepHang/GetById/<int:id_xh>', methods=['GET'])
+def get_bang_xep_hang_by_id(id_xh):
+    try:
+        cursor = con.cursor()
+        cursor.execute("""
+            SELECT bxh.IdXH, bxh.IdGiai, bxh.IdTeam, bxh.TranDa, bxh.TranThang, 
+                   bxh.TranThua, bxh.MapThang, bxh.MapThua, bxh.Diem, bxh.HangHienTai,
+                   g.TenGiai, t.TenTeam
+            FROM BangXepHang bxh
+            LEFT JOIN GiaiDau g ON bxh.IdGiai = g.IdGiai
+            LEFT JOIN Team t ON bxh.IdTeam = t.IdTeam
+            WHERE bxh.IdXH = ?
+        """, (id_xh,))
+        
+        row = cursor.fetchone()
+        cursor.close()
+
+        if not row:
+            return jsonify({'error': 'Bảng xếp hạng không tồn tại'}), 404
+
+        result = {
+            "IdXH": row.IdXH,
+            "IdGiai": row.IdGiai if row.IdGiai else None,
+            "TenGiai": row.TenGiai if row.TenGiai else "",
+            "IdTeam": row.IdTeam if row.IdTeam else None,
+            "TenTeam": row.TenTeam if row.TenTeam else "",
+            "TranDa": row.TranDa if row.TranDa else 0,
+            "TranThang": row.TranThang if row.TranThang else 0,
+            "TranThua": row.TranThua if row.TranThua else 0,
+            "MapThang": row.MapThang if row.MapThang else 0,
+            "MapThua": row.MapThua if row.MapThua else 0,
+            "Diem": row.Diem if row.Diem else 0,
+            "HangHienTai": row.HangHienTai if row.HangHienTai else 0,
+            "TiLe": f"{row.MapThang}/{row.MapThua}" if row.MapThang and row.MapThua else "0/0"
+        }
+
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/BangXepHang/GetByGiai/<int:id_giai>', methods=['GET'])
+def get_bang_xep_hang_by_giai(id_giai):
+    try:
+        cursor = con.cursor()
+        cursor.execute("""
+            SELECT bxh.IdXH, bxh.IdGiai, bxh.IdTeam, bxh.TranDa, bxh.TranThang, 
+                   bxh.TranThua, bxh.MapThang, bxh.MapThua, bxh.Diem, bxh.HangHienTai,
+                   g.TenGiai, t.TenTeam
+            FROM BangXepHang bxh
+            LEFT JOIN GiaiDau g ON bxh.IdGiai = g.IdGiai
+            LEFT JOIN Team t ON bxh.IdTeam = t.IdTeam
+            WHERE bxh.IdGiai = ?
+            ORDER BY bxh.Diem DESC, bxh.HangHienTai
+        """, (id_giai,))
+        rows = cursor.fetchall()
+
+        result = []
+        for row in rows:
+            result.append({
+                "IdXH": row.IdXH,
+                "IdGiai": row.IdGiai if row.IdGiai else None,
+                "TenGiai": row.TenGiai if row.TenGiai else "",
+                "IdTeam": row.IdTeam if row.IdTeam else None,
+                "TenTeam": row.TenTeam if row.TenTeam else "",
+                "TranDa": row.TranDa if row.TranDa else 0,
+                "TranThang": row.TranThang if row.TranThang else 0,
+                "TranThua": row.TranThua if row.TranThua else 0,
+                "MapThang": row.MapThang if row.MapThang else 0,
+                "MapThua": row.MapThua if row.MapThua else 0,
+                "Diem": row.Diem if row.Diem else 0,
+                "HangHienTai": row.HangHienTai if row.HangHienTai else 0,
+                "TiLe": f"{row.MapThang}/{row.MapThua}" if row.MapThang and row.MapThua else "0/0"
+            })
+
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
 # === CHẠY APP ===
 if __name__ == '__main__':
     if con:

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,9 +11,237 @@
         <h2>Quản Trị</h2>
         <a href="quanlygiaidau.html">📦 Quản lý Giải Đấu</a>
         <a href="quanly_Team_Player.html">🧾 Quản lý Team và Player</a>
-        <a href="quanli_trandau.html">👥 Quản lý Trận Đấu</a>
+        <a href="quanli_trandau.html">🎮 Quản lý Trận Đấu</a>
         <a href="quanli_xephang.html">📊 Quản Lý Bảng Xếp Hạng</a>
-        <a href="index.html">Quay Lại</a>
-      </div>
+        <a href="index.html">🏠 Quay Lại</a>
+    </div>
+
+    <div class="content">
+        <div class="header">
+            <h2>🎮 Quản Lý Trận Đấu</h2>
+            <div class="btn-container">
+                <button class="btn btn-primary" onclick="openAddModal()">+ Thêm Trận Đấu</button>
+                <button class="btn btn-success" onclick="refreshData()">🔄 Tải Lại</button>
+            </div>
+            <div class="search-container">
+                <input type="text" class="search-input" placeholder="Tìm kiếm trận đấu..." id="searchInput">
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="matchTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Giải Đấu</th>
+                        <th>Đội 1</th>
+                        <th>Đội 2</th>
+                        <th>Tỷ Số</th>
+                        <th>Ngày Thi Đấu</th>
+                        <th>Vòng Đấu</th>
+                        <th>Trạng Thái</th>
+                        <th>Đội Thắng</th>
+                        <th>Thao Tác</th>
+                    </tr>
+                </thead>
+                <tbody id="matchTableBody">
+                    <!-- Dữ liệu sẽ được load từ API -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal Thêm/Sửa Trận Đấu -->
+    <div id="matchModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Thêm Trận Đấu Mới</h3>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="matchForm">
+                    <div class="form-group">
+                        <label for="idGiai">Giải Đấu *</label>
+                        <select id="idGiai" name="idGiai" required>
+                            <option value="">Chọn giải đấu</option>
+                            <!-- Dữ liệu sẽ được load từ API -->
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="team1">Đội 1 *</label>
+                            <select id="team1" name="team1" required>
+                                <option value="">Chọn đội 1</option>
+                                <!-- Dữ liệu sẽ được load từ API -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="team2">Đội 2 *</label>
+                            <select id="team2" name="team2" required>
+                                <option value="">Chọn đội 2</option>
+                                <!-- Dữ liệu sẽ được load từ API -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="tiSoTeam1">Tỷ Số Đội 1</label>
+                            <input type="number" id="tiSoTeam1" name="tiSoTeam1" min="0" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="tiSoTeam2">Tỷ Số Đội 2</label>
+                            <input type="number" id="tiSoTeam2" name="tiSoTeam2" min="0" value="0">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="ngayThiDau">Ngày Thi Đấu *</label>
+                            <input type="datetime-local" id="ngayThiDau" name="ngayThiDau" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="vongDau">Vòng Đấu</label>
+                            <input type="text" id="vongDau" name="vongDau" placeholder="VD: Vòng 1, Tứ kết...">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="trangThai">Trạng Thái</label>
+                            <select id="trangThai" name="trangThai">
+                                <option value="Chưa diễn ra">Chưa diễn ra</option>
+                                <option value="Đang diễn ra">Đang diễn ra</option>
+                                <option value="Đã kết thúc">Đã kết thúc</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="teamThang">Đội Thắng</label>
+                            <select id="teamThang" name="teamThang">
+                                <option value="">Chưa xác định</option>
+                                <!-- Sẽ được cập nhật dựa trên Team1 và Team2 -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ghiChu">Ghi Chú</label>
+                        <textarea id="ghiChu" name="ghiChu" placeholder="Nhập ghi chú cho trận đấu..."></textarea>
+                    </div>
+
+                    <div class="btn-container">
+                        <button type="submit" class="btn btn-primary">Lưu</button>
+                        <button type="button" class="btn btn-danger" onclick="closeModal()">Hủy</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentMatchId = null;
+        let isEditMode = false;
+
+        // Mở modal thêm trận đấu
+        function openAddModal() {
+            isEditMode = false;
+            currentMatchId = null;
+            document.getElementById('modalTitle').textContent = 'Thêm Trận Đấu Mới';
+            document.getElementById('matchForm').reset();
+            document.getElementById('matchModal').style.display = 'block';
+        }
+
+        // Mở modal sửa trận đấu
+        function editMatch(id) {
+            isEditMode = true;
+            currentMatchId = id;
+            document.getElementById('modalTitle').textContent = 'Sửa Trận Đấu';
+            // TODO: Load dữ liệu trận đấu và fill vào form
+            document.getElementById('matchModal').style.display = 'block';
+        }
+
+        // Đóng modal
+        function closeModal() {
+            document.getElementById('matchModal').style.display = 'none';
+            document.getElementById('matchForm').reset();
+        }
+
+        // Xóa trận đấu
+        function deleteMatch(id) {
+            if (confirm('Bạn có chắc chắn muốn xóa trận đấu này?')) {
+                // TODO: Gọi API xóa trận đấu
+                console.log('Xóa trận đấu ID:', id);
+            }
+        }
+
+        // Tải lại dữ liệu
+        function refreshData() {
+            // TODO: Gọi API load lại dữ liệu
+            console.log('Tải lại dữ liệu');
+        }
+
+        // Xử lý submit form
+        document.getElementById('matchForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            if (isEditMode) {
+                // TODO: Gọi API cập nhật trận đấu
+                console.log('Cập nhật trận đấu:', data);
+            } else {
+                // TODO: Gọi API tạo trận đấu mới
+                console.log('Tạo trận đấu mới:', data);
+            }
+            
+            closeModal();
+        });
+
+        // Tìm kiếm
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            // TODO: Implement tìm kiếm
+            console.log('Tìm kiếm:', searchTerm);
+        });
+
+        // Đóng modal khi click bên ngoài
+        window.onclick = function(event) {
+            const modal = document.getElementById('matchModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // Cập nhật dropdown đội thắng khi chọn đội 1 hoặc đội 2
+        document.getElementById('team1').addEventListener('change', updateWinnerOptions);
+        document.getElementById('team2').addEventListener('change', updateWinnerOptions);
+
+        function updateWinnerOptions() {
+            const team1 = document.getElementById('team1');
+            const team2 = document.getElementById('team2');
+            const teamThang = document.getElementById('teamThang');
+            
+            // Xóa các option cũ
+            teamThang.innerHTML = '<option value="">Chưa xác định</option>';
+            
+            // Thêm option cho đội 1
+            if (team1.value && team1.selectedOptions[0]) {
+                const option1 = document.createElement('option');
+                option1.value = team1.value;
+                option1.textContent = team1.selectedOptions[0].textContent;
+                teamThang.appendChild(option1);
+            }
+            
+            // Thêm option cho đội 2
+            if (team2.value && team2.selectedOptions[0]) {
+                const option2 = document.createElement('option');
+                option2.value = team2.value;
+                option2.textContent = team2.selectedOptions[0].textContent;
+                teamThang.appendChild(option2);
+            }
+        }
+    </script>
 </body>
 </html>
