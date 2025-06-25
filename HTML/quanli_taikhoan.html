@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Tài Khoản Quản Trị</title>
+    <link rel="stylesheet" href="/CSS/quanli_taikhoan.css">
+</head>
+<body>
+    <div class="sidebar">
+        <h2>🛡️ Quản Trị</h2>
+        <a href="quanlygiaidau.html">📦 Quản lý Giải Đấu</a>
+        <a href="quanly_Team_Player.html">🧾 Quản lý Team và Player</a>
+        <a href="quanli_trandau.html">🎮 Quản lý Trận Đấu</a>
+        <a href="quanli_xephang.html">📊 Quản Lý Bảng Xếp Hạng</a>
+        <a href="quanli_taikhoan.html" class="active">🪪 Quản Lý Tài khoản</a>
+        <a href="index.html">🏠 Quay Lại</a>
+    </div>
+
+    <div class="main-content">
+        <div class="container">
+            <div class="header">
+                <h1>🪪 Quản Lý Tài Khoản Quản Trị</h1>
+                <p>Quản lý thông tin tài khoản quản trị viên hệ thống</p>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="openAddModal()">
+                    ➕ Thêm Quản Trị Viên
+                </button>
+                <button class="btn btn-success" onclick="refreshData()">
+                    🔄 Làm Mới
+                </button>
+            </div>
+
+            <div class="data-table">
+                <div class="table-header">
+                    <h3>📋 Danh Sách Quản Trị Viên</h3>
+                    <input type="text" class="search-box" placeholder="🔍 Tìm kiếm..." id="searchInput">
+                </div>
+                
+                <div id="loadingDiv" class="loading" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Đang tải dữ liệu...</p>
+                </div>
+
+                <table id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Tên Đăng Nhập</th>
+                            <th>Họ Tên</th>
+                            <th>Vai Trò</th>
+                            <th>Mô Tả</th>
+                            <th>Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Dữ liệu sẽ được load từ API -->
+                    </tbody>
+                </table>
+
+                <div id="noDataDiv" class="no-data" style="display: none;">
+                    <p>📭 Không có dữ liệu để hiển thị</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Thêm Quản Trị Viên -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4>➕ Thêm Quản Trị Viên Mới</h4>
+                <span class="close" onclick="closeModal('addModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="addForm">
+                    <div class="form-group">
+                        <label for="addTenDangNhap">Tên Đăng Nhập *</label>
+                        <input type="text" class="form-control" id="addTenDangNhap" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="addMatKhau">Mật Khẩu *</label>
+                        <input type="password" class="form-control" id="addMatKhau" required minlength="6">
+                        <small style="color: #666;">Tối thiểu 6 ký tự</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="addHoTen">Họ Tên *</label>
+                        <input type="text" class="form-control" id="addHoTen" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="addVaiTro">Vai Trò *</label>
+                        <select class="form-control" id="addVaiTro" required>
+                            <option value="">-- Chọn vai trò --</option>
+                            <option value="Admin">Admin</option>
+                            <option value="Moderator">Moderator</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="addMoTa">Mô Tả</label>
+                        <textarea class="form-control" id="addMoTa" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('addModal')">Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="addAdmin()">Thêm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Sửa Quản Trị Viên -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4>✏️ Sửa Thông Tin Quản Trị Viên</h4>
+                <span class="close" onclick="closeModal('editModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="editForm">
+                    <input type="hidden" id="editId">
+                    <div class="form-group">
+                        <label for="editTenDangNhap">Tên Đăng Nhập</label>
+                        <input type="text" class="form-control" id="editTenDangNhap" readonly style="background-color: #f8f9fa;">
+                    </div>
+                    <div class="form-group">
+                        <label for="editHoTen">Họ Tên *</label>
+                        <input type="text" class="form-control" id="editHoTen" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editVaiTro">Vai Trò *</label>
+                        <select class="form-control" id="editVaiTro" required>
+                            <option value="Admin">Admin</option>
+                            <option value="Moderator">Moderator</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editMoTa">Mô Tả</label>
+                        <textarea class="form-control" id="editMoTa" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('editModal')">Hủy</button>
+                <button type="button" class="btn btn-warning" onclick="updateAdmin()">Cập Nhật</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Đổi Mật Khẩu -->
+    <div id="changePasswordModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4>🔑 Đổi Mật Khẩu</h4>
+                <span class="close" onclick="closeModal('changePasswordModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="changePasswordForm">
+                    <input type="hidden" id="changePasswordId">
+                    <div class="form-group">
+                        <label for="matKhauCu">Mật Khẩu Cũ *</label>
+                        <input type="password" class="form-control" id="matKhauCu" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="matKhauMoi">Mật Khẩu Mới *</label>
+                        <input type="password" class="form-control" id="matKhauMoi" required minlength="6">
+                        <small style="color: #666;">Tối thiểu 6 ký tự</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="xacNhanMatKhau">Xác Nhận Mật Khẩu Mới *</label>
+                        <input type="password" class="form-control" id="xacNhanMatKhau" required minlength="6">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('changePasswordModal')">Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="changePassword()">Đổi Mật Khẩu</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dữ liệu sẽ được load từ API
+        let adminData = [];
+
+        // Hiển thị dữ liệu
+        function displayData(data = adminData) {
+            const tableBody = document.getElementById('tableBody');
+            const noDataDiv = document.getElementById('noDataDiv');
+            const dataTable = document.getElementById('dataTable');
+
+            if (data.length === 0) {
+                dataTable.style.display = 'none';
+                noDataDiv.style.display = 'block';
+                return;
+            }
+
+            dataTable.style.display = 'table';
+            noDataDiv.style.display = 'none';
+
+            tableBody.innerHTML = '';
+            data.forEach(admin => {
+                const badgeClass = admin.VaiTro === 'Admin' ? 'badge-admin' : 'badge-moderator';
+                const row = `
+                    <tr>
+                        <td>${admin.IdQuanTri}</td>
+                        <td>${admin.TenDangNhap}</td>
+                        <td>${admin.HoTen}</td>
+                        <td><span class="badge ${badgeClass}">${admin.VaiTro}</span></td>
+                        <td>${admin.MoTa || ''}</td>
+                        <td>
+                            <button class="btn btn-warning btn-sm" onclick="openEditModal(${admin.IdQuanTri})">✏️ Sửa</button>
+                            <button class="btn btn-primary btn-sm" onclick="openChangePasswordModal(${admin.IdQuanTri})">🔑 Đổi MK</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteAdmin(${admin.IdQuanTri})">🗑️ Xóa</button>
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+        }
+
+        // Tìm kiếm
+        document.getElementById('searchInput').addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const filteredData = adminData.filter(admin => 
+                admin.TenDangNhap.toLowerCase().includes(searchTerm) ||
+                admin.HoTen.toLowerCase().includes(searchTerm) ||
+                admin.VaiTro.toLowerCase().includes(searchTerm) ||
+                (admin.MoTa && admin.MoTa.toLowerCase().includes(searchTerm))
+            );
+            displayData(filteredData);
+        });
+
+        // Modal functions
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'block';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+            // Reset form
+            const form = document.querySelector(`#${modalId} form`);
+            if (form) form.reset();
+        }
+
+        function openAddModal() {
+            openModal('addModal');
+        }
+
+        function openEditModal(id) {
+            const admin = adminData.find(a => a.IdQuanTri === id);
+            if (admin) {
+                document.getElementById('editId').value = admin.IdQuanTri;
+                document.getElementById('editTenDangNhap').value = admin.TenDangNhap;
+                document.getElementById('editHoTen').value = admin.HoTen;
+                document.getElementById('editVaiTro').value = admin.VaiTro;
+                document.getElementById('editMoTa').value = admin.MoTa || '';
+                openModal('editModal');
+            }
+        }
+
+        function openChangePasswordModal(id) {
+            document.getElementById('changePasswordId').value = id;
+            openModal('changePasswordModal');
+        }
+
+        // CRUD Operations (Sẽ kết nối API)
+        function addAdmin() {
+            const tenDangNhap = document.getElementById('addTenDangNhap').value;
+            const matKhau = document.getElementById('addMatKhau').value;
+            const hoTen = document.getElementById('addHoTen').value;
+            const vaiTro = document.getElementById('addVaiTro').value;
+            const moTa = document.getElementById('addMoTa').value;
+
+            if (!tenDangNhap || !matKhau || !hoTen || !vaiTro) {
+                alert('⚠️ Vui lòng điền đầy đủ thông tin bắt buộc!');
+                return;
+            }
+
+            if (matKhau.length < 6) {
+                alert('⚠️ Mật khẩu phải có ít nhất 6 ký tự!');
+                return;
+            }
+
+            // TODO: Gọi API POST /QuanTri/Register
+            console.log('Thêm quản trị viên:', { tenDangNhap, matKhau, hoTen, vaiTro, moTa });
+            alert('⚠️ Chức năng sẽ được kết nối API sau!');
+        }
+
+        function updateAdmin() {
+            const id = parseInt(document.getElementById('editId').value);
+            const hoTen = document.getElementById('editHoTen').value;
+            const vaiTro = document.getElementById('editVaiTro').value;
+            const moTa = document.getElementById('editMoTa').value;
+
+            if (!hoTen || !vaiTro) {
+                alert('⚠️ Vui lòng điền đầy đủ thông tin bắt buộc!');
+                return;
+            }
+
+            // TODO: Gọi API PUT /QuanTri/Update/{id}
+            console.log('Cập nhật quản trị viên:', { id, hoTen, vaiTro, moTa });
+            alert('⚠️ Chức năng sẽ được kết nối API sau!');
+        }
+
+        function changePassword() {
+            const id = parseInt(document.getElementById('changePasswordId').value);
+            const matKhauCu = document.getElementById('matKhauCu').value;
+            const matKhauMoi = document.getElementById('matKhauMoi').value;
+            const xacNhanMatKhau = document.getElementById('xacNhanMatKhau').value;
+
+            if (!matKhauCu || !matKhauMoi || !xacNhanMatKhau) {
+                alert('⚠️ Vui lòng điền đầy đủ thông tin!');
+                return;
+            }
+
+            if (matKhauMoi.length < 6) {
+                alert('⚠️ Mật khẩu mới phải có ít nhất 6 ký tự!');
+                return;
+            }
+
+            if (matKhauMoi !== xacNhanMatKhau) {
+                alert('⚠️ Mật khẩu mới và xác nhận mật khẩu không khớp!');
+                return;
+            }
+
+            // TODO: Gọi API PUT /QuanTri/ChangePassword/{id}
+            console.log('Đổi mật khẩu:', { id, matKhauCu, matKhauMoi });
+            alert('⚠️ Chức năng sẽ được kết nối API sau!');
+        }
+
+        function deleteAdmin(id) {
+            if (confirm('⚠️ Bạn có chắc chắn muốn xóa quản trị viên này?')) {
+                // TODO: Gọi API DELETE /QuanTri/Delete/{id}
+                console.log('Xóa quản trị viên:', id);
+                alert('⚠️ Chức năng sẽ được kết nối API sau!');
+            }
+        }
+
+        function refreshData() {
+            // TODO: Gọi API GET /QuanTri/GetAll
+            console.log('Làm mới dữ liệu');
+            alert('⚠️ Chức năng sẽ được kết nối API sau!');
+        }
+
+        function loadData() {
+            // TODO: Gọi API GET /QuanTri/GetAll để load dữ liệu ban đầu
+            console.log('Load dữ liệu ban đầu');
+            displayData([]); // Hiển thị trống
+        }
