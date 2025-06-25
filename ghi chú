@@ -1,0 +1,89 @@
+@app.route('/Map/Create', methods=['POST'])
+def create_map():
+    try:
+        data = request.json
+        ten_map = data.get('TenMap')
+        trang_thai = data.get('TrangThai', 1)
+
+        if not ten_map:
+            return jsonify({'error': 'Tên map là bắt buộc'}), 400
+
+        cursor = con.cursor()
+        
+        # Kiểm tra tên map đã tồn tại
+        cursor.execute("SELECT COUNT(*) FROM Map WHERE TenMap = ?", (ten_map,))
+        count = cursor.fetchone()[0]
+        if count > 0:
+            return jsonify({'error': 'Tên map đã tồn tại'}), 400
+
+        # Thêm map mới
+        query = """
+            INSERT INTO Map (TenMap, TrangThai)
+            VALUES (?, ?)
+        """
+        cursor.execute(query, (ten_map, trang_thai))
+        con.commit()
+        cursor.close()
+
+        return jsonify({'message': 'Tạo map thành công'}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/Map/Update/<int:id_map>', methods=['PUT'])
+def update_map(id_map):
+    try:
+        data = request.json
+        ten_map = data.get('TenMap')
+        trang_thai = data.get('TrangThai', 1)
+
+        if not ten_map:
+            return jsonify({'error': 'Tên map là bắt buộc'}), 400
+
+        cursor = con.cursor()
+        
+        # Kiểm tra map có tồn tại không
+        cursor.execute("SELECT COUNT(*) FROM Map WHERE IdMap = ?", (id_map,))
+        count = cursor.fetchone()[0]
+        if count == 0:
+            return jsonify({'error': 'Map không tồn tại'}), 404
+
+        # Kiểm tra tên map đã tồn tại (trừ chính nó)
+        cursor.execute("SELECT COUNT(*) FROM Map WHERE TenMap = ? AND IdMap != ?", 
+                      (ten_map, id_map))
+        count = cursor.fetchone()[0]
+        if count > 0:
+            return jsonify({'error': 'Tên map đã tồn tại'}), 400
+
+        # Cập nhật thông tin
+        query = """
+            UPDATE Map 
+            SET TenMap = ?, TrangThai = ?
+            WHERE IdMap = ?
+        """
+        cursor.execute(query, (ten_map, trang_thai, id_map))
+        con.commit()
+        cursor.close()
+        
+        return jsonify({'message': 'Cập nhật map thành công'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/Map/Delete/<int:id_map>', methods=['DELETE'])
+def delete_map(id_map):
+    try:
+        cursor = con.cursor()
+        
+        # Kiểm tra map có tồn tại không
+        cursor.execute("SELECT COUNT(*) FROM Map WHERE IdMap = ?", (id_map,))
+        count = cursor.fetchone()[0]
+        if count == 0:
+            return jsonify({'error': 'Map không tồn tại'}), 404
+
+        # Xóa map (soft delete)
+        cursor.execute("UPDATE Map SET TrangThai = 0 WHERE IdMap = ?", (id_map,))
+        con.commit()
+        cursor.close()
+        
+        return jsonify({'message': 'Xóa map thành công'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maps - VALORANT Tournament</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: bold;
+            color: white;
+        }
+
+        .nav {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav a {
+            text-decoration: none;
+            color: white;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .nav a:hover, .nav a.active {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .auth-buttons a {
+            padding: 0.5rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .login-btn {
+            color: white;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .login-btn:hover, .register-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .register-btn {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .page-title {
+            text-align: center;
+            color: white;
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .page-subtitle {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.2rem;
+            margin-bottom: 3rem;
+        }
+
+        .maps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .map-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .map-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .map-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .map-card:hover .map-image {
+            transform: scale(1.1);
+        }
+
+        .map-info {
+            padding: 1.5rem;
+        }
+
+        .map-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #667eea;
+        }
+
+        .map-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 4rem;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .error {
+            background: rgba(244, 67, 54, 0.1);
+            color: #d32f2f;
+            padding: 1rem;
+            border-radius: 10px;
+            text-align: center;
+            margin: 2rem 0;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+
+        .modal-content {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            margin: 5% auto;
+            padding: 2rem;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .close {
+            color: #999;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close:hover {
+            color: #667eea;
+        }
+
+        .modal-title {
+            color: #667eea;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .matches-list {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .match-item {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            padding: 1.5rem;
+            border-left: 4px solid #667eea;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .match-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .match-teams {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .team-name {
+            font-weight: bold;
+            color: #333;
+            font-size: 1.1rem;
+        }
+
+        .vs {
+            color: #667eea;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .match-score {
+            text-align: center;
+            font-size: 1.5rem;
+            color: #667eea;
+            margin: 1rem 0;
+            font-weight: bold;
+        }
+
+        .match-details {
+            font-size: 0.9rem;
+            color: #666;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .match-details span {
+            background: rgba(102, 126, 234, 0.1);
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-weight: 500;
+        }
+
+        .no-matches {
+            text-align: center;
+            padding: 4rem;
+            color: white;
+            font-size: 1.2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 1rem;
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .nav {
+                gap: 1rem;
+                display: none;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            .page-title {
+                font-size: 2rem;
+            }
+
+            .maps-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .modal-content {
+                width: 95%;
+                margin: 10% auto;
+                padding: 1rem;
+            }
+
+            .match-teams {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .match-details {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">🎮 VALORANT</div>
+        <div class="nav">
+            <a href="index.html">Trang chủ</a>
+            <a href="giaidau.html">Giải đấu</a>
+            <a href="team.html">Team</a>
+            <a href="trandau.html">Trận Đấu</a>
+            <a href="xephang.html">Bảng Xếp Hạng</a>
+            <a href="map.html" class="active">Map</a>
+            <a href="admin.html">Quản Lý</a>
+        </div>
+        <div class="auth-buttons" id="authButtons">
+            <a href="login.html" class="login-btn" id="loginBtn">Đăng nhập</a>
+            <a href="register.html" class="register-btn" id="registerBtn">Đăng ký</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1 class="page-title">🗺️ VALORANT MAPS</h1>
+        <p class="page-subtitle">Khám phá các bản đồ và trận đấu diễn ra trên từng map</p>
+        
+        <div id="loading" class="loading">
+            <div>🔄 Đang tải dữ liệu maps...</div>
+        </div>
+        
+        <div id="error" class="error" style="display: none;">
+            ❌ Không thể tải dữ liệu maps. Vui lòng thử lại sau.
+        </div>
+        
+        <div id="mapsGrid" class="maps-grid" style="display: none;">
+            <!-- Maps sẽ được tải bằng JavaScript -->
+        </div>
+    </div>
+
+    <!-- Modal hiển thị trận đấu -->
+    <div id="matchesModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="modalTitle" class="modal-title">Trận đấu trên map</h2>
+            <div id="matchesList" class="matches-list">
+                <!-- Trận đấu sẽ được tải bằng JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API base URL
+        const API_BASE = 'http://localhost:5000';
+        
+        // Map images mapping với ảnh local
+        const mapImages = {
+            'Bind': '/image/Bind.jpg',
+            'Haven': '/image/Haven.jpg',
+            'Split': '/image/Split.jpg',
+            'Ascent': '/image/Ascent.jpg',
+            'Icebox': '/image/Icebox.jpg',
+            'Breeze': '/image/Breeze.jpg',
+            'Fracture': '/image/Fracture.jpg',
+            'Pearl': '/image/Pearl.jpg',
+            'Lotus': '/image/Lotus.jpg',
+            'Sunset': '/image/Sunset.jpg'
+        };
+
+        // Load maps khi trang tải
+        document.addEventListener('DOMContentLoaded', function() {
+            loadMaps();
+            setupModal();
+            updateAuthButtons();
+        });
+
+        async function loadMaps() {
+            try {
+                const response = await fetch(`${API_BASE}/Map/GetAll`);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch maps');
+                }
+                
+                const maps = await response.json();
+                displayMaps(maps);
+                
+            } catch (error) {
+                console.error('Error loading maps:', error);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+            }
+        }
+
+        function displayMaps(maps) {
+            const mapsGrid = document.getElementById('mapsGrid');
+            const loading = document.getElementById('loading');
+            
+            if (maps.length === 0) {
+                mapsGrid.innerHTML = '<div class="no-matches">Không có map nào được tìm thấy</div>';
+            } else {
+                mapsGrid.innerHTML = maps.map(map => `
+                    <div class="map-card" onclick="showMapMatches(${map.IdMap}, '${map.TenMap}')">
+                        <img src="${mapImages[map.TenMap] || 'https://via.placeholder.com/400x200?text=' + encodeURIComponent(map.TenMap)}" 
+                             alt="${map.TenMap}" 
+                             class="map-image"
+                             onerror="this.src='https://via.placeholder.com/400x200?text=' + encodeURIComponent('${map.TenMap}')">
+                        <div class="map-info">
+                            <div class="map-name">${map.TenMap}</div>
+                            <div class="map-stats">
+                                <span>🎯 Map ID: ${map.IdMap}</span>
+                                <span>✅ Hoạt động</span>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            loading.style.display = 'none';
+            mapsGrid.style.display = 'grid';
+        }
+
+        async function showMapMatches(mapId, mapName) {
+            const modal = document.getElementById('matchesModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const matchesList = document.getElementById('matchesList');
+            
+            modalTitle.textContent = `Trận đấu trên map ${mapName}`;
+            matchesList.innerHTML = '<div class="loading">🔄 Đang tải trận đấu...</div>';
+            
+            modal.style.display = 'block';
+            
+            try {
+                const response = await fetch(`${API_BASE}/Map/GetMatches/${mapId}`);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch matches');
+                }
+                
+                const matches = await response.json();
+                displayMatches(matches);
+                
+            } catch (error) {
+                console.error('Error loading matches:', error);
+                matchesList.innerHTML = '<div class="error">❌ Không thể tải dữ liệu trận đấu</div>';
+            }
+        }
+
+        function displayMatches(matches) {
+            const matchesList = document.getElementById('matchesList');
+            
+            if (matches.length === 0) {
+                matchesList.innerHTML = '<div class="no-matches">Chưa có trận đấu nào trên map này</div>';
+                return;
+            }
+            
+            matchesList.innerHTML = matches.map(match => `
+                <div class="match-item">
+                    <div class="match-teams">
+                        <span class="team-name">${match.TenTeam1}</span>
+                        <span class="vs">VS</span>
+                        <span class="team-name">${match.TenTeam2}</span>
+                    </div>
+                    <div class="match-score">
+                        ${match.TiSoTeam1} - ${match.TiSoTeam2}
+                        ${match.TenTeamThang ? `<br><small>🏆 ${match.TenTeamThang}</small>` : ''}
+                    </div>
+                    <div class="match-details">
+                        <span>📅 ${match.NgayThiDau ? new Date(match.NgayThiDau).toLocaleDateString('vi-VN') : 'Chưa xác định'}</span>
+                        <span>🏟️ ${match.VongDau || 'Vòng đấu'}</span>
+                        <span>🎮 ${match.TrangThai || 'Chưa diễn ra'}</span>
+                    </div>
+                    ${match.TenGiai ? `<div style="margin-top: 0.5rem; color: #667eea; font-weight: bold;">🏆 ${match.TenGiai}</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function setupModal() {
+            const modal = document.getElementById('matchesModal');
+            const closeBtn = document.querySelector('.close');
+            
+            closeBtn.onclick = function() {
+                modal.style.display = 'none';
+            }
+            
+            window.onclick = function(event) {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            }
+        }
+
+        // Auth button handling
+        function updateAuthButtons() {
+            const authButtons = document.getElementById('authButtons');
+            const token = localStorage.getItem('token');
+            
+            if (token) {
+                const user = JSON.parse(localStorage.getItem('user') || '{}');
+                authButtons.innerHTML = `
+                    <span style="color: white; font-weight: 500;">Xin chào, ${user.HoTen || 'Admin'}</span>
+                    <button onclick="logout()" style="background: #ff6b6b; color: white; border: none; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; font-weight: 500; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">Đăng xuất</button>
+                `;
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>

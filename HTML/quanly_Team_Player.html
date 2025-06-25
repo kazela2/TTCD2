@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Quản lý đội và thành viên</title>
+  <link rel="stylesheet" href="/CSS/quanly_Team_Player.css">
+</head>
+<body>
+  <div class="sidebar">
+    <h2>Quản Trị</h2>
+    <a href="quanlygiaidau.html">📦 Quản lý Giải Đấu</a>
+    <a href="quanly_Team_Player.html">🧾 Quản lý Team và Player</a>
+    <a href="quanli_trandau.html">👥 Quản lý Trận Đấu</a>
+    <a href="quanli_xephang.html">📊 Quản Lý Bảng Xếp Hạng</a>
+    <a href="index.html">Quay Lại</a>
+  </div>
+
+  <div class="content">
+    <div class="header">
+      <h2>Quản Lý Đội và Thành Viên</h2>
+      <div class="search-container">
+        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Tìm kiếm đội hoặc thành viên...">
+      </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="tab-container">
+      <button class="tab-button active" onclick="switchTab('teams')">👥 Quản Lý Đội</button>
+      <button class="tab-button" onclick="switchTab('players')">🏃‍♂️ Quản Lý Thành Viên</button>
+    </div>
+
+    <!-- Teams Tab -->
+    <div id="teams-tab" class="tab-content active">
+      <div class="table-container">
+        <div class="btn-container">
+          <button class="btn btn-primary" onclick="openTeamModal()">➕ Thêm Đội Mới</button>
+          <button class="btn btn-success" onclick="exportTeamData()">📤 Xuất Dữ Liệu</button>
+        </div>
+        
+        <div id="teamsLoadingState" class="loading">
+          🔄 Đang tải dữ liệu đội...
+        </div>
+        
+        <table id="teamsTable" style="display: none;">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Tên Đội</th>
+              <th>Huấn Luyện Viên</th>
+              <th>Số Thành Viên</th>
+              <th>Ngày Thành Lập</th>
+              <th>Trạng Thái</th>
+              <th>Mô Tả</th>
+              <th>Hành Động</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Dữ liệu sẽ được chèn ở đây bằng JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Players Tab -->
+    <div id="players-tab" class="tab-content">
+      <div class="table-container">
+        <div class="btn-container">
+          <button class="btn btn-primary" onclick="openPlayerModal()">➕ Thêm Thành Viên Mới</button>
+          <button class="btn btn-success" onclick="exportPlayerData()">📤 Xuất Dữ Liệu</button>
+          <select id="teamFilter" class="btn" style="background: #95a5a6; color: white;">
+            <option value="">🔽 Lọc theo đội</option>
+            <!-- Options sẽ được thêm bằng JavaScript -->
+          </select>
+        </div>
+        
+        <div id="playersLoadingState" class="loading">
+          🔄 Đang tải dữ liệu thành viên...
+        </div>
+        
+        <table id="playersTable" style="display: none;">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Tên Thành Viên</th>
+              <th>Đội</th>
+              <th>Vị Trí</th>
+              <th>Số Áo</th>
+              <th>Tuổi</th>
+              <th>Điện Thoại</th>
+              <th>Trạng Thái</th>
+              <th>Hành Động</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Dữ liệu sẽ được chèn ở đây bằng JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal for Team Management -->
+  <div id="teamModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="teamModalTitle">Thêm Đội Mới</h3>
+        <span class="close" onclick="closeTeamModal()">&times;</span>
+      </div>
+      <div class="modal-body">
+        <form id="teamForm">
+          <div class="form-group">
+            <label for="teamName">Tên Đội *</label>
+            <input type="text" id="teamName" name="teamName" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="teamCoach">Huấn Luyện Viên *</label>
+            <input type="text" id="teamCoach" name="teamCoach" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="teamFoundedDate">Ngày Thành Lập</label>
+            <input type="date" id="teamFoundedDate" name="teamFoundedDate">
+          </div>
+          
+          <div class="form-group">
+            <label for="teamStatus">Trạng Thái</label>
+            <select id="teamStatus" name="teamStatus">
+              <option value="active">Hoạt Động</option>
+              <option value="inactive">Tạm Nghỉ</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="teamDescription">Mô Tả</label>
+            <textarea id="teamDescription" name="teamDescription" placeholder="Nhập mô tả về đội..."></textarea>
+          </div>
+          
+          <div class="btn-container">
+            <button type="submit" class="btn btn-primary">💾 Lưu</button>
+            <button type="button" class="btn btn-danger" onclick="closeTeamModal()">❌ Hủy</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal for Player Management -->
+  <div id="playerModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="playerModalTitle">Thêm Thành Viên Mới</h3>
+        <span class="close" onclick="closePlayerModal()">&times;</span>
+      </div>
+      <div class="modal-body">
+        <form id="playerForm">
+          <div class="form-group">
+            <label for="playerName">Tên Thành Viên *</label>
+            <input type="text" id="playerName" name="playerName" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="playerTeam">Đội *</label>
+            <select id="playerTeam" name="playerTeam" required>
+              <option value="">Chọn đội</option>
+              <!-- Options sẽ được thêm bằng JavaScript -->
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="playerPosition">Vị Trí</label>
+            <select id="playerPosition" name="playerPosition">
+              <option value="">Chọn vị trí</option>
+              <option value="Thủ môn">Thủ môn</option>
+              <option value="Hậu vệ">Hậu vệ</option>
+              <option value="Tiền vệ">Tiền vệ</option>
+              <option value="Tiền đạo">Tiền đạo</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="playerNumber">Số Áo</label>
+            <input type="number" id="playerNumber" name="playerNumber" min="1" max="99">
+          </div>
+          
+          <div class="form-group">
+            <label for="playerAge">Tuổi</label>
+            <input type="number" id="playerAge" name="playerAge" min="16" max="50">
+          </div>
+          
+          <div class="form-group">
+            <label for="playerPhone">Số Điện Thoại</label>
+            <input type="tel" id="playerPhone" name="playerPhone">
+          </div>
+          
+          <div class="form-group">
+            <label for="playerEmail">Email</label>
+            <input type="email" id="playerEmail" name="playerEmail">
+          </div>
+          
+          <div class="form-group">
+            <label for="playerStatus">Trạng Thái</label>
+            <select id="playerStatus" name="playerStatus">
+              <option value="active">Hoạt Động</option>
+              <option value="injured">Chấn Thương</option>
+              <option value="suspended">Bị Treo Giò</option>
+              <option value="inactive">Tạm Nghỉ</option>
+            </select>
+          </div>
+          
+          <div class="btn-container">
+            <button type="submit" class="btn btn-primary">💾 Lưu</button>
+            <button type="button" class="btn btn-danger" onclick="closePlayerModal()">❌ Hủy</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div id="confirmModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Xác Nhận</h3>
+        <span class="close" onclick="closeConfirmModal()">&times;</span>
+      </div>
+      <div class="modal-body">
+        <p id="confirmMessage">Bạn có chắc chắn muốn thực hiện hành động này?</p>
+        <div class="btn-container">
+          <button class="btn btn-danger" id="confirmYes">✓ Có</button>
+          <button class="btn btn-primary" onclick="closeConfirmModal()">✗ Không</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Global variables
+    let currentEditingTeamId = null;
+    let currentEditingPlayerId = null;
+    let teamsData = [];
+    let playersData = [];
+
+    // Tab switching function
+    function switchTab(tabName) {
+      // Hide all tabs
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      
+      // Remove active class from all buttons
+      document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      
+      // Show selected tab
+      document.getElementById(tabName + '-tab').classList.add('active');
+      
+      // Add active class to clicked button
+      event.target.classList.add('active');
+    }
+
+    // Modal functions for teams
+    function openTeamModal(teamId = null) {
+      const modal = document.getElementById('teamModal');
+      const title = document.getElementById('teamModalTitle');
+      
+      if (teamId) {
+        title.textContent = 'Chỉnh Sửa Đội';
+        currentEditingTeamId = teamId;
+        // Load team data for editing
+        loadTeamData(teamId);
+      } else {
+        title.textContent = 'Thêm Đội Mới';
+        currentEditingTeamId = null;
+        document.getElementById('teamForm').reset();
+      }
+      
+      modal.style.display = 'block';
+    }
+
+    function closeTeamModal() {
+      document.getElementById('teamModal').style.display = 'none';
+      currentEditingTeamId = null;
+    }
+
+    // Modal functions for players
+    function openPlayerModal(playerId = null) {
+      const modal = document.getElementById('playerModal');
+      const title = document.getElementById('playerModalTitle');
+      
+      if (playerId) {
+        title.textContent = 'Chỉnh Sửa Thành Viên';
+        currentEditingPlayerId = playerId;
+        // Load player data for editing
+        loadPlayerData(playerId);
+      } else {
+        title.textContent = 'Thêm Thành Viên Mới';
+        currentEditingPlayerId = null;
+        document.getElementById('playerForm').reset();
+      }
+      
+      modal.style.display = 'block';
+    }
+
+    function closePlayerModal() {
+      document.getElementById('playerModal').style.display = 'none';
+      currentEditingPlayerId = null;
+    }
+
+    // Confirmation modal functions
+    function showConfirmModal(message, callback) {
+      document.getElementById('confirmMessage').textContent = message;
+      document.getElementById('confirmYes').onclick = callback;
+      document.getElementById('confirmModal').style.display = 'block';
+    }
+
+    function closeConfirmModal() {
+      document.getElementById('confirmModal').style.display = 'none';
+    }
+
+    // Delete functions
+    function deleteTeam(teamId) {
+      showConfirmModal('Bạn có chắc chắn muốn xóa đội này không?', function() {
+        // Delete team logic will be implemented here
+        console.log('Deleting team:', teamId);
+        closeConfirmModal();
+      });
+    }
+
+    function deletePlayer(playerId) {
+      showConfirmModal('Bạn có chắc chắn muốn xóa thành viên này không?', function() {
+        // Delete player logic will be implemented here
+        console.log('Deleting player:', playerId);
+        closeConfirmModal();
+      });
+    }
+
+    // Data loading functions (placeholders)
+    function loadTeamData(teamId) {
+      // This will be implemented with actual data loading
+      console.log('Loading team data for ID:', teamId);
+    }
+
+    function loadPlayerData(playerId) {
+      // This will be implemented with actual data loading
+      console.log('Loading player data for ID:', playerId);
+    }
+
+    // Export functions
+    function exportTeamData() {
+      console.log('Exporting team data...');
+    }
+
+    function exportPlayerData() {
+      console.log('Exporting player data...');
+    }
+
+    // Close modals when clicking outside
+    window.onclick = function(event) {
+      const teamModal = document.getElementById('teamModal');
+      const playerModal = document.getElementById('playerModal');
+      const confirmModal = document.getElementById('confirmModal');
+      
+      if (event.target === teamModal) {
+        closeTeamModal();
+      }
+      if (event.target === playerModal) {
+        closePlayerModal();
+      }
+      if (event.target === confirmModal) {
+        closeConfirmModal();
+      }
+    }
+
+    // Initialize the page
+    document.addEventListener('DOMContentLoaded', function() {
+      // Initialize search functionality
+      document.getElementById('searchInput').addEventListener('input', function() {
+        // Search functionality will be implemented here
+        console.log('Searching:', this.value);
+      });
+
+      // Initialize team filter
+      document.getElementById('teamFilter').addEventListener('change', function() {
+        // Filter functionality will be implemented here
+        console.log('Filtering by team:', this.value);
+      });
+
+      // Form submission handlers
+      document.getElementById('teamForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        // Team form submission logic will be implemented here
+        console.log('Team form submitted');
+      });
+
+      document.getElementById('playerForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        // Player form submission logic will be implemented here
+        console.log('Player form submitted');
+      });
+    });
+  </script>
+</body>
+</html>

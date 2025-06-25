@@ -1,20 +1,21 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trận Đấu</title>
+    <title>Trận Đấu - Valorant Tournament</title>
     <link rel="stylesheet" href="/CSS/trandau.css">
 </head>
 <body>
-    <div class="header">
-        <div class="logo">🎮</div>
+      <div class="header">
+        <div class="logo">🎮 VALORANT</div>
         <div class="nav">
           <a href="index.html">Trang chủ</a>
           <a href="giaidau.html">Giải đấu</a>
-          <a href="team.html">Đội thi đấu</a>
+          <a href="team.html">Team</a>
           <a href="trandau.html">Trận Đấu</a>
           <a href="xephang.html">Bảng Xếp Hạng</a>
+          <a href="map.html">Map</a>
           <a href="admin.html">Quản Lý</a>
         </div>
         <div class="auth-buttons" id="authButtons">
@@ -24,5 +25,393 @@
         </div>
     </div>
 
+    <div class="container">
+        <h1 class="page-title">TRẬN ĐẤU</h1>
+        <p class="page-subtitle">Theo dõi lịch thi đấu và kết quả các trận đấu</p>
+
+        <div class="filters">
+            <div class="filter-group">
+                <label for="tournamentFilter">Giải đấu:</label>
+                <select id="tournamentFilter">
+                    <option value="">Tất cả giải đấu</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="statusFilter">Trạng thái:</label>
+                <select id="statusFilter">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="Chưa diễn ra">Chưa diễn ra</option>
+                    <option value="Đang diễn ra">Đang diễn ra</option>
+                    <option value="Đã kết thúc">Đã kết thúc</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="roundFilter">Vòng đấu:</label>
+                <select id="roundFilter">
+                    <option value="">Tất cả vòng đấu</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="loadingIndicator" class="loading">
+            <div>⏳ Đang tải dữ liệu...</div>
+        </div>
+
+        <div id="errorMessage" class="error" style="display: none;"></div>
+
+        <div id="matchesContainer" class="matches-grid" style="display: none;"></div>
+
+        <div id="noMatches" class="no-matches" style="display: none;">
+            <div>📅 Không có trận đấu nào</div>
+            <p>Chưa có trận đấu nào được lên lịch</p>
+        </div>
+    </div>
+
+    <script>
+        // API Base URL - thay đổi theo địa chỉ server của bạn
+        const API_BASE_URL = 'http://localhost:5000';
+        
+        let allMatches = [];
+        let tournaments = [];
+
+        // DOM Elements
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const errorMessage = document.getElementById('errorMessage');
+        const matchesContainer = document.getElementById('matchesContainer');
+        const noMatches = document.getElementById('noMatches');
+        const tournamentFilter = document.getElementById('tournamentFilter');
+        const statusFilter = document.getElementById('statusFilter');
+        const roundFilter = document.getElementById('roundFilter');
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTournaments();
+            loadMatches();
+            setupFilters();
+        });
+
+        // Load tournaments for filter
+        async function loadTournaments() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/GiaiDau/GetAll`);
+                if (!response.ok) throw new Error('Không thể tải danh sách giải đấu');
+                
+                tournaments = await response.json();
+                populateTournamentFilter();
+            } catch (error) {
+                console.error('Error loading tournaments:', error);
+            }
+        }
+
+        // Load matches from API
+        async function loadMatches() {
+            try {
+                showLoading();
+                const response = await fetch(`${API_BASE_URL}/TranDau/GetAll`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                allMatches = await response.json();
+                populateRoundFilter();
+                displayMatches(allMatches);
+                hideLoading();
+                
+            } catch (error) {
+                console.error('Error loading matches:', error);
+                showError('Không thể tải dữ liệu trận đấu. Vui lòng thử lại sau.');
+                hideLoading();
+            }
+        }
+
+        // Populate tournament filter
+        function populateTournamentFilter() {
+            tournamentFilter.innerHTML = '<option value="">Tất cả giải đấu</option>';
+            tournaments.forEach(tournament => {
+                const option = document.createElement('option');
+                option.value = tournament.IdGiai;
+                option.textContent = tournament.TenGiai;
+                tournamentFilter.appendChild(option);
+            });
+        }
+
+        // Populate round filter
+        function populateRoundFilter() {
+            const rounds = [...new Set(allMatches.map(match => match.VongDau).filter(round => round))];
+            roundFilter.innerHTML = '<option value="">Tất cả vòng đấu</option>';
+            rounds.forEach(round => {
+                const option = document.createElement('option');
+                option.value = round;
+                option.textContent = round;
+                roundFilter.appendChild(option);
+            });
+        }
+
+        // Setup filter event listeners
+        function setupFilters() {
+            tournamentFilter.addEventListener('change', filterMatches);
+            statusFilter.addEventListener('change', filterMatches);
+            roundFilter.addEventListener('change', filterMatches);
+        }
+
+        // Filter matches based on selected criteria
+        function filterMatches() {
+            const tournamentId = tournamentFilter.value;
+            const status = statusFilter.value;
+            const round = roundFilter.value;
+
+            let filteredMatches = allMatches.filter(match => {
+                let matchesTournament = true;
+                let matchesStatus = true;
+                let matchesRound = true;
+
+                if (tournamentId) {
+                    matchesTournament = match.IdGiai == tournamentId;
+                }
+
+                if (status) {
+                    matchesStatus = match.TrangThai === status;
+                }
+
+                if (round) {
+                    matchesRound = match.VongDau === round;
+                }
+
+                return matchesTournament && matchesStatus && matchesRound;
+            });
+
+            displayMatches(filteredMatches);
+        }
+
+        // Display matches
+        function displayMatches(matches) {
+            if (matches.length === 0) {
+                matchesContainer.style.display = 'none';
+                noMatches.style.display = 'block';
+                return;
+            }
+
+            matchesContainer.style.display = 'grid';
+            noMatches.style.display = 'none';
+            
+            matchesContainer.innerHTML = matches.map(match => createMatchCard(match)).join('');
+        }
+
+        // Create match card HTML
+        function createMatchCard(match) {
+            const statusClass = getStatusClass(match.TrangThai);
+            const matchDate = match.NgayThiDau ? new Date(match.NgayThiDau) : null;
+            const formattedDate = matchDate ? formatDate(matchDate) : 'Chưa xác định';
+            const formattedTime = matchDate ? formatTime(matchDate) : '';
+
+            return `
+                <div class="match-card">
+                    <div class="match-header">
+                        <div class="match-round">${match.VongDau || 'Vòng đấu'}</div>
+                        <div class="match-status ${statusClass}">${match.TrangThai || 'Chưa diễn ra'}</div>
+                    </div>
+                    
+                    <div class="match-teams">
+                        <div class="team">
+                            <div class="team-logo">${getTeamInitials(match.TenTeam1)}</div>
+                            <div class="team-name">${match.TenTeam1 || 'Team 1'}</div>
+                            <div class="team-score">${match.TiSoTeam1 || 0}</div>
+                        </div>
+                        
+                        <div class="vs-separator">VS</div>
+                        
+                        <div class="team">
+                            <div class="team-logo">${getTeamInitials(match.TenTeam2)}</div>
+                            <div class="team-name">${match.TenTeam2 || 'Team 2'}</div>
+                            <div class="team-score">${match.TiSoTeam2 || 0}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="match-info">
+                        <div class="info-row">
+                            <span class="info-label">Giải đấu:</span>
+                            <span class="info-value">${match.TenGiai || 'Chưa xác định'}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Ngày thi đấu:</span>
+                            <span class="info-value">${formattedDate}</span>
+                        </div>
+                        ${formattedTime ? `
+                        <div class="info-row">
+                            <span class="info-label">Giờ thi đấu:</span>
+                            <span class="info-value">${formattedTime}</span>
+                        </div>
+                        ` : ''}
+                        ${match.TenTeamThang ? `
+                        <div class="info-row">
+                            <span class="info-label">Đội thắng:</span>
+                            <span class="info-value">${match.TenTeamThang}</span>
+                        </div>
+                        ` : ''}
+                        ${match.GhiChu ? `
+                        <div class="info-row">
+                            <span class="info-label">Ghi chú:</span>
+                            <span class="info-value">${match.GhiChu}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Get status CSS class
+        function getStatusClass(status) {
+            switch (status) {
+                case 'Chưa diễn ra':
+                    return 'status-scheduled';
+                case 'Đang diễn ra':
+                    return 'status-live';
+                case 'Đã kết thúc':
+                    return 'status-finished';
+                default:
+                    return 'status-scheduled';
+            }
+        }
+
+        // Get team initials for logo
+        function getTeamInitials(teamName) {
+            if (!teamName) return '?';
+            return teamName.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2);
+        }
+
+        // Format date
+        function formatDate(date) {
+            return date.toLocaleDateString('vi-VN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+        }
+
+        // Format time
+        function formatTime(date) {
+            return date.toLocaleTimeString('vi-VN', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Show loading indicator
+        function showLoading() {
+            loadingIndicator.style.display = 'block';
+            matchesContainer.style.display = 'none';
+            noMatches.style.display = 'none';
+            errorMessage.style.display = 'none';
+        }
+
+        // Hide loading indicator
+        function hideLoading() {
+            loadingIndicator.style.display = 'none';
+        }
+
+        // Show error message
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            matchesContainer.style.display = 'none';
+            noMatches.style.display = 'none';
+        }
+
+        // Auto refresh every 30 seconds for live matches
+        setInterval(() => {
+            const hasLiveMatches = allMatches.some(match => match.TrangThai === 'Đang diễn ra');
+            if (hasLiveMatches) {
+                loadMatches();
+            }
+        }, 30000);
+    </script>
+
+    <script>
+      // Kiểm tra trạng thái đăng nhập khi trang được tải
+      window.addEventListener('load', function() {
+          updateAuthButtons();
+      });
+
+      function updateAuthButtons() {
+          const authButtons = document.getElementById('authButtons');
+          const token = localStorage.getItem('adminToken');
+          const user = localStorage.getItem('adminUser');
+
+          if (token && user) {
+              // Người dùng đã đăng nhập
+              const userData = JSON.parse(user);
+              authButtons.innerHTML = `
+                  <div class="user-info" style="display: flex; align-items: center; gap: 10px;">
+                      <span style="color: white; font-size: 14px;">Xin chào, ${userData.HoTen || userData.TenDangNhap}</span>
+                      <button onclick="logout()" class="logout-btn" style="
+                          background: #ff4757;
+                          color: white;
+                          border: none;
+                          padding: 8px 16px;
+                          border-radius: 4px;
+                          cursor: pointer;
+                          font-size: 14px;
+                          transition: background 0.3s;
+                      " onmouseover="this.style.background='#ff3742'" onmouseout="this.style.background='#ff4757'">
+                          Đăng xuất
+                      </button>
+                  </div>
+              `;
+          } else {
+              // Người dùng chưa đăng nhập
+              authButtons.innerHTML = `
+                  <a href="login.html" class="login-btn">Đăng nhập</a>
+                  <a href="register.html" class="register-btn">Đăng ký</a>
+              `;
+          }
+      }
+
+      function logout() {
+          // Hiển thị xác nhận trước khi đăng xuất
+          if (confirm('Bạn có chắc chắn muốn đăng xuất không?')) {
+              // Xóa thông tin đăng nhập khỏi localStorage
+              localStorage.removeItem('adminToken');
+              localStorage.removeItem('adminUser');
+              
+              // Hiển thị thông báo
+              alert('Đã đăng xuất thành công!');
+              
+              // Cập nhật lại giao diện
+              updateAuthButtons();
+              
+              // Có thể chuyển hướng về trang chủ hoặc trang đăng nhập
+              // window.location.href = 'login.html';
+          }
+      }
+
+      // Kiểm tra token có hết hạn không (tùy chọn)
+      function checkTokenExpiry() {
+          const token = localStorage.getItem('adminToken');
+          if (token) {
+              try {
+                  // Decode JWT token để kiểm tra thời gian hết hạn
+                  const payload = JSON.parse(atob(token.split('.')[1]));
+                  const currentTime = Date.now() / 1000;
+                  
+                  if (payload.exp < currentTime) {
+                      // Token đã hết hạn
+                      localStorage.removeItem('adminToken');
+                      localStorage.removeItem('adminUser');
+                      updateAuthButtons();
+                      alert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!');
+                  }
+              } catch (error) {
+                  console.error('Error checking token expiry:', error);
+              }
+          }
+      }
+
+      // Kiểm tra token mỗi 5 phút
+      setInterval(checkTokenExpiry, 5 * 60 * 1000);
+      
+      // Kiểm tra token ngay khi trang được tải
+      checkTokenExpiry();
+  </script>
 </body>
 </html>

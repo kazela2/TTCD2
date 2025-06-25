@@ -990,6 +990,106 @@ def get_tran_dau_by_vong(vong_dau):
         return jsonify(result)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+    
+@app.route('/Map/GetAll', methods=['GET'])
+def get_all_maps():
+    try:
+        cursor = con.cursor()
+        cursor.execute("""
+            SELECT IdMap, TenMap, TrangThai
+            FROM Map
+            WHERE TrangThai = 1
+            ORDER BY TenMap
+        """)
+        rows = cursor.fetchall()
+
+        result = []
+        for row in rows:
+            result.append({
+                "IdMap": row.IdMap,
+                "TenMap": row.TenMap,
+                "TrangThai": row.TrangThai
+            })
+
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/Map/GetById/<int:id_map>', methods=['GET'])
+def get_map_by_id(id_map):
+    try:
+        cursor = con.cursor()
+        cursor.execute("""
+            SELECT IdMap, TenMap, TrangThai
+            FROM Map
+            WHERE IdMap = ?
+        """, (id_map,))
+        
+        row = cursor.fetchone()
+        cursor.close()
+
+        if not row:
+            return jsonify({'error': 'Map không tồn tại'}), 404
+
+        result = {
+            "IdMap": row.IdMap,
+            "TenMap": row.TenMap,
+            "TrangThai": row.TrangThai
+        }
+
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+    # Route để lấy trận đấu theo map (cần thêm cột IdMap vào bảng TranDau)
+@app.route('/Map/GetMatches/<int:id_map>', methods=['GET'])
+def get_matches_by_map(id_map):
+    try:
+        cursor = con.cursor()
+        # Giả sử bạn đã thêm cột IdMap vào bảng TranDau
+        cursor.execute("""
+            SELECT td.IdTran, td.IdGiai, td.Team1, td.Team2, td.TiSoTeam1, td.TiSoTeam2,
+                   td.NgayThiDau, td.VongDau, td.TrangThai, td.TeamThang, td.GhiChu,
+                   g.TenGiai, t1.TenTeam as TenTeam1, t2.TenTeam as TenTeam2,
+                   tw.TenTeam as TenTeamThang, m.TenMap
+            FROM TranDau td
+            LEFT JOIN GiaiDau g ON td.IdGiai = g.IdGiai
+            LEFT JOIN Team t1 ON td.Team1 = t1.IdTeam
+            LEFT JOIN Team t2 ON td.Team2 = t2.IdTeam
+            LEFT JOIN Team tw ON td.TeamThang = tw.IdTeam
+            LEFT JOIN Map m ON td.IdMap = m.IdMap
+            WHERE td.IdMap = ?
+            ORDER BY td.NgayThiDau DESC
+        """, (id_map,))
+        rows = cursor.fetchall()
+
+        result = []
+        for row in rows:
+            result.append({
+                "IdTran": row.IdTran,
+                "IdGiai": row.IdGiai if row.IdGiai else None,
+                "TenGiai": row.TenGiai if row.TenGiai else "",
+                "Team1": row.Team1 if row.Team1 else None,
+                "Team2": row.Team2 if row.Team2 else None,
+                "TenTeam1": row.TenTeam1 if row.TenTeam1 else "",
+                "TenTeam2": row.TenTeam2 if row.TenTeam2 else "",
+                "TiSoTeam1": row.TiSoTeam1 if row.TiSoTeam1 else 0,
+                "TiSoTeam2": row.TiSoTeam2 if row.TiSoTeam2 else 0,
+                "NgayThiDau": row.NgayThiDau.strftime('%Y-%m-%d %H:%M:%S') if row.NgayThiDau else None,
+                "VongDau": row.VongDau if row.VongDau else "",
+                "TrangThai": row.TrangThai if row.TrangThai else "Chưa diễn ra",
+                "TeamThang": row.TeamThang if row.TeamThang else None,
+                "TenTeamThang": row.TenTeamThang if row.TenTeamThang else "",
+                "GhiChu": row.GhiChu if row.GhiChu else "",
+                "TenMap": row.TenMap if row.TenMap else ""
+            })
+
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+    
 # === CHẠY APP ===
 if __name__ == '__main__':
     if con:
