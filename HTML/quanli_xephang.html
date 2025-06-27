@@ -1,148 +1,121 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Quản lý Bảng Xếp Hạng</title>
-    <link rel="stylesheet" href="/CSS/quanli_xephang.css" />
+    <link rel="stylesheet" href="/CSS/quanli_xephang.css">
 </head>
 <body>
     <div class="sidebar">
         <h2>Quản Trị</h2>
-        <a href="quanlygiaidau.html">📦 Quản lý Giải Đấu</a>
-        <a href="quanly_Team_Player.html">🧾 Quản lý Team và Player</a>
-        <a href="quanli_trandau.html">🎮 Quản lý Trận Đấu</a>
-        <a href="quanli_xephang.html" class="active">📊 Quản Lý Bảng Xếp Hạng</a>
-        <a href="quanli_taikhoan.html">🪪 Quản Lý Tài khoản</a>
-        <a href="quanli_map.html">🗺️ Quản Lý Chi Tiết Map</a>
+        <a href="quanlygiaidau.html">📦 Giải Đấu</a>
+        <a href="quanly_Team_Player.html">🧾 Team & Player</a>
+        <a href="quanli_trandau.html">🎮 Trận Đấu</a>
+        <a href="quanli_xephang.html" class="active">📊 Bảng Xếp Hạng</a>
+        <a href="quanli_taikhoan.html">🪪 Tài khoản</a>
+        <a href="quanli_map.html">🗺️ Chi Tiết Map</a>
         <a href="index.html">🏠 Quay Lại</a>
     </div>
 
     <div class="content">
         <div class="header">
-            <h2>📊 Quản Lý Bảng Xếp Hạng</h2>
-            <div class="search-container">
-                <input type="text" id="searchInput" class="search-input" placeholder="🔍 Tìm kiếm đội hoặc giải đấu...">
-            </div>
+            <h2>📊 Bảng Xếp Hạng</h2>
+            <input type="text" id="searchInput" class="search-input" placeholder="🔍 Tìm kiếm...">
         </div>
 
         <div class="table-container">
             <div class="btn-container">
-                <select id="tournamentFilter" class="btn" style="background: #95a5a6; color: white;">
-                    <option value="">🔽 Lọc theo giải đấu</option>
-                    <!-- Options sẽ được thêm bằng JavaScript -->
+                <select id="tournamentFilter" class="btn">
+                    <option value="">🔽 Lọc Giải Đấu</option>
                 </select>
-                <button class="btn btn-primary" onclick="openRankingModal()">➕ Thêm Bảng Xếp Hạng</button>
-                <button class="btn btn-success" onclick="initializeTournament()">🎮 Khởi Tạo Bảng Xếp Hạng</button>
-                <button class="btn btn-warning" onclick="updateFromMatches()">🔄 Cập Nhật Từ Trận Đấu</button>
-                <button class="btn btn-info" onclick="exportRankingData()">📤 Xuất Dữ Liệu</button>
+                <button class="btn btn-primary" onclick="openModal()">➕ Thêm</button>
+                <button class="btn btn-info" onclick="exportData()">📤 Xuất CSV</button>
             </div>
 
-            <div id="rankingsLoadingState" class="loading">
-                🔄 Đang tải dữ liệu bảng xếp hạng...
-            </div>
-
-            <div id="noData" class="no-data" style="display: none;">
-                <p>📭 Không có dữ liệu để hiển thị</p>
-            </div>
-
+            <div id="loading" class="loading">🔄 Đang tải...</div>
+            <div id="noData" class="no-data" style="display: none;">📭 Không có dữ liệu</div>
             <table id="rankingsTable" style="display: none;">
                 <thead>
                     <tr>
                         <th>Hạng</th>
-                        <th>Tên Đội</th>
-                        <th>Giải Đấu</th>
-                        <th>Trận Đã Đấu</th>
-                        <th>Trận Thắng</th>
-                        <th>Trận Thua</th>
+                        <th>Đội</th>
+                        <th>Giải</th>
+                        <th>Đã Đấu</th>
+                        <th>Thắng</th>
+                        <th>Thua</th>
                         <th>Điểm</th>
                         <th>Hành Động</th>
                     </tr>
                 </thead>
-                <tbody id="tableBody">
-                    <!-- Dữ liệu sẽ được chèn ở đây bằng JavaScript -->
-                </tbody>
+                <tbody id="tableBody"></tbody>
             </table>
         </div>
     </div>
 
-    <!-- Notification -->
     <div id="notification" class="notification" style="display: none;">
-        <span id="notificationMessage"></span>
+        <span id="message"></span>
         <span class="notification-close" onclick="closeNotification()">×</span>
     </div>
 
-    <!-- Modal for Ranking Management -->
-    <div id="rankingModal" class="modal">
+    <div id="modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="rankingModalTitle">Chỉnh Sửa Bảng Xếp Hạng</h3>
-                <span class="close" onclick="closeRankingModal()">×</span>
+                <h3 id="modalTitle">Thêm Bảng Xếp Hạng</h3>
+                <span class="close" onclick="closeModal()">×</span>
             </div>
-            <div id="rankingModalAlert"></div>
+            <div id="modalAlert"></div>
             <div class="modal-body">
                 <form id="rankingForm">
                     <div class="form-group">
                         <label for="tournamentSelect">Giải Đấu *</label>
-                        <select id="tournamentSelect" name="tournamentSelect" required>
+                        <select id="tournamentSelect" required>
                             <option value="">Chọn giải đấu</option>
-                            <!-- Options sẽ được thêm bằng JavaScript -->
                         </select>
                     </div>
-
                     <div class="form-group">
                         <label for="teamSelect">Đội *</label>
-                        <select id="teamSelect" name="teamSelect" required>
+                        <select id="teamSelect" required>
                             <option value="">Chọn đội</option>
-                            <!-- Options sẽ được thêm bằng JavaScript -->
                         </select>
                     </div>
-
                     <div class="form-group">
                         <label for="matchesPlayed">Trận Đã Đấu</label>
-                        <input type="number" id="matchesPlayed" name="matchesPlayed" min="0" value="0" required>
+                        <input type="number" id="matchesPlayed" min="0" value="0" required>
                     </div>
-
                     <div class="form-group">
                         <label for="matchesWon">Trận Thắng</label>
-                        <input type="number" id="matchesWon" name="matchesWon" min="0" value="0" required>
+                        <input type="number" id="matchesWon" min="0" value="0" required>
                     </div>
-
                     <div class="form-group">
                         <label for="matchesLost">Trận Thua</label>
-                        <input type="number" id="matchesLost" name="matchesLost" min="0" value="0" required>
+                        <input type="number" id="matchesLost" min="0" value="0" required>
                     </div>
-
                     <div class="form-group">
                         <label for="mapsWon">Map Thắng</label>
-                        <input type="number" id="mapsWon" name="mapsWon" min="0" value="0" required>
+                        <input type="number" id="mapsWon" min="0" value="0" required>
                     </div>
-
                     <div class="form-group">
                         <label for="mapsLost">Map Thua</label>
-                        <input type="number" id="mapsLost" name="mapsLost" min="0" value="0" required>
+                        <input type="number" id="mapsLost" min="0" value="0" required>
                     </div>
-
                     <div class="form-group">
                         <label for="points">Điểm</label>
-                        <input type="number" id="points" name="points" min="0" value="0" required>
+                        <input type="number" id="points" min="0" value="0" required>
                     </div>
-
                     <div class="form-group">
                         <label for="currentRank">Hạng Hiện Tại</label>
-                        <input type="number" id="currentRank" name="currentRank" min="1" value="1" required>
+                        <input type="number" id="currentRank" min="1" value="1" required>
                     </div>
-
                     <div class="btn-container">
                         <button type="submit" class="btn btn-primary">💾 Lưu</button>
-                        <button type="button" class="btn btn-danger" onclick="closeRankingModal()">❌ Hủy</button>
+                        <button type="button" class="btn btn-danger" onclick="closeModal()">❌ Hủy</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- Confirmation Modal -->
     <div id="confirmModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -151,7 +124,7 @@
             </div>
             <div id="confirmModalAlert"></div>
             <div class="modal-body">
-                <p id="confirmMessage">Bạn có chắc chắn muốn thực hiện hành động này?</p>
+                <p id="confirmMessage"></p>
                 <div class="btn-container">
                     <button class="btn btn-danger" id="confirmYes">✓ Có</button>
                     <button class="btn btn-primary" onclick="closeConfirmModal()">✗ Không</button>
@@ -162,147 +135,97 @@
 
     <script>
         const API_BASE_URL = 'http://localhost:5000';
-        let currentEditingRankingId = null;
-        let rankingsData = [];
-        let tournamentsData = [];
-        let teamsData = [];
+        let currentEditingId = null, rankings = [], tournaments = [], teams = [];
 
-        // Notification functions
-        function showNotification(message, type = 'success') {
-            const notification = document.getElementById('notification');
-            const messageElement = document.getElementById('notificationMessage');
-            messageElement.textContent = message;
-            notification.className = `notification ${type}`;
-            notification.style.display = 'block';
-            setTimeout(closeNotification, 3000);
-        }
+        const showNotification = (msg, type = 'success') => {
+            const noti = document.getElementById('notification');
+            document.getElementById('message').textContent = msg;
+            noti.className = `notification ${type}`;
+            noti.style.display = 'block';
+            setTimeout(() => noti.style.display = 'none', 3000);
+        };
 
-        function closeNotification() {
-            document.getElementById('notification').style.display = 'none';
-        }
+        const toggleLoading = (show) => {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+            document.getElementById('rankingsTable').style.display = show ? 'none' : rankings.length ? 'table' : 'none';
+            document.getElementById('noData').style.display = show || rankings.length ? 'none' : 'block';
+        };
 
-        // Show/hide loading
-        function showLoading() {
-            document.getElementById('rankingsLoadingState').style.display = 'block';
-            document.getElementById('rankingsTable').style.display = 'none';
-            document.getElementById('noData').style.display = 'none';
-        }
-
-        function hideLoading() {
-            document.getElementById('rankingsLoadingState').style.display = 'none';
-        }
-
-        // Modal functions for rankings
-        function openRankingModal(rankingId = null) {
-            const modal = document.getElementById('rankingModal');
-            const title = document.getElementById('rankingModalTitle');
-            document.getElementById('rankingModalAlert').innerHTML = '';
-
-            if (rankingId) {
-                title.textContent = 'Chỉnh Sửa Bảng Xếp Hạng';
-                currentEditingRankingId = rankingId;
-                loadRankingData(rankingId);
-            } else {
-                title.textContent = 'Thêm Bảng Xếp Hạng Mới';
-                currentEditingRankingId = null;
+        const openModal = (id = null) => {
+            const modal = document.getElementById('modal'), title = document.getElementById('modalTitle');
+            document.getElementById('modalAlert').innerHTML = '';
+            currentEditingId = id;
+            title.textContent = id ? 'Chỉnh Sửa Bảng Xếp Hạng' : 'Thêm Bảng Xếp Hạng';
+            if (id) loadRankingData(id); else {
                 document.getElementById('rankingForm').reset();
                 document.getElementById('tournamentSelect').value = '';
                 document.getElementById('teamSelect').value = '';
                 updateTeamSelect();
             }
-
             modal.style.display = 'block';
-        }
+        };
 
-        function closeRankingModal() {
-            document.getElementById('rankingModal').style.display = 'none';
-            currentEditingRankingId = null;
+        const closeModal = () => {
+            document.getElementById('modal').style.display = 'none';
+            currentEditingId = null;
             document.getElementById('rankingForm').reset();
             document.getElementById('tournamentSelect').value = '';
             document.getElementById('teamSelect').value = '';
             updateTeamSelect();
-        }
+        };
 
-        // Confirmation modal functions
-        function showConfirmModal(message, callback) {
-            document.getElementById('confirmMessage').textContent = message;
-            document.getElementById('confirmYes').onclick = callback;
+        const showConfirmModal = (msg, cb) => {
+            document.getElementById('confirmMessage').textContent = msg;
+            document.getElementById('confirmYes').onclick = cb;
             document.getElementById('confirmModal').style.display = 'block';
             document.getElementById('confirmModalAlert').innerHTML = '';
-        }
+        };
 
-        function closeConfirmModal() {
-            document.getElementById('confirmModal').style.display = 'none';
-        }
+        const closeConfirmModal = () => document.getElementById('confirmModal').style.display = 'none';
 
-        // Load rankings data
-        async function loadRankings(tournamentId = '') {
+        const loadRankings = async (tournamentId = '') => {
             try {
-                showLoading();
+                toggleLoading(true);
                 const url = tournamentId ? `${API_BASE_URL}/BangXepHang/GetByGiai/${tournamentId}` : `${API_BASE_URL}/BangXepHang/GetAll`;
-                const response = await fetch(url);
-                const data = await response.json();
-                hideLoading();
-                if (response.ok) {
-                    rankingsData = data;
-                    renderRankingsTable();
-                } else {
-                    showNotification(`Lỗi tải bảng xếp hạng: ${data.error}`, 'error');
-                    rankingsData = [];
-                    renderRankingsTable();
-                }
-            } catch (error) {
-                hideLoading();
-                showNotification(`Lỗi kết nối khi tải bảng xếp hạng: ${error.message}`, 'error');
-                rankingsData = [];
-                renderRankingsTable();
+                const res = await fetch(url);
+                rankings = await res.json();
+                toggleLoading(false);
+                if (res.ok) renderTable(); else showNotification(`Lỗi: ${rankings.error}`, 'error');
+            } catch (e) {
+                toggleLoading(false);
+                showNotification(`Lỗi kết nối: ${e.message}`, 'error');
+                rankings = [];
+                renderTable();
             }
-        }
+        };
 
-        // Render rankings table
-        function renderRankingsTable() {
-            const tbody = document.querySelector('#rankingsTable tbody');
-            const table = document.getElementById('rankingsTable');
-            const noData = document.getElementById('noData');
-
-            if (rankingsData.length === 0) {
-                table.style.display = 'none';
-                noData.style.display = 'block';
-                return;
-            }
-
-            table.style.display = 'table';
-            noData.style.display = 'none';
-            tbody.innerHTML = '';
-
-            rankingsData.forEach(row => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${row.HangHienTai}</td>
-                    <td>${row.TenTeam}</td>
-                    <td>${row.TenGiai}</td>
-                    <td>${row.TranDa}</td>
-                    <td>${row.TranThang}</td>
-                    <td>${row.TranThua}</td>
-                    <td>${row.TiLe}</td>
-                    <td>${row.Diem}</td>
+        const renderTable = () => {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = rankings.length ? rankings.map(r => `
+                <tr>
+                    <td>${r.HangHienTai}</td>
+                    <td>${r.TenTeam}</td>
+                    <td>${r.TenGiai}</td>
+                    <td>${r.TranDa}</td>
+                    <td>${r.TranThang}</td>
+                    <td>${r.TranThua}</td>
+                    <td>${r.Diem}</td>
                     <td>
-                        <button class="btn btn-primary" onclick="openRankingModal(${row.IdXH})">✏️</button>
-                        <button class="btn btn-danger" onclick="deleteRanking(${row.IdXH})">🗑️</button>
+                        <button class="btn btn-primary" onclick="openModal(${r.IdXH})">✏️</button>
+                        <button class="btn btn-danger" onclick="deleteRanking(${r.IdXH})">🗑️</button>
                     </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
+                </tr>
+            `).join('') : '';
+            toggleLoading(false);
+        };
 
-        // Load ranking data for editing
-        async function loadRankingData(rankingId) {
+        const loadRankingData = async (id) => {
             try {
-                showLoading();
-                const response = await fetch(`${API_BASE_URL}/BangXepHang/GetById/${rankingId}`);
-                const data = await response.json();
-                hideLoading();
-                if (response.ok) {
+                toggleLoading(true);
+                const res = await fetch(`${API_BASE_URL}/BangXepHang/GetById/${id}`);
+                const data = await res.json();
+                toggleLoading(false);
+                if (res.ok) {
                     document.getElementById('tournamentSelect').value = data.IdGiai || '';
                     await updateTeamSelect(data.IdGiai);
                     document.getElementById('teamSelect').value = data.IdTeam || '';
@@ -312,208 +235,80 @@
                     document.getElementById('mapsWon').value = data.MapThang || 0;
                     document.getElementById('mapsLost').value = data.MapThua || 0;
                     document.getElementById('points').value = data.Diem || 0;
-                    document.getElementById('currentRank').value = data.HangHienTai || 0;
-                } else {
-                    showNotification(`Lỗi tải dữ liệu bảng xếp hạng: ${data.error}`, 'error');
-                }
-            } catch (error) {
-                hideLoading();
-                showNotification(`Lỗi kết nối khi tải dữ liệu bảng xếp hạng: ${error.message}`, 'error');
+                    document.getElementById('currentRank').value = data.HangHienTai || 1;
+                } else showNotification(`Lỗi: ${data.error}`, 'error');
+            } catch (e) {
+                toggleLoading(false);
+                showNotification(`Lỗi kết nối: ${e.message}`, 'error');
             }
-        }
+        };
 
-        // Load tournaments for filter and modal
-        async function loadTournaments() {
+        const loadTournaments = async () => {
             try {
-                console.log("Fetching tournaments from /GiaiDau/GetAll");
-                const response = await fetch(`${API_BASE_URL}/GiaiDau/GetAll`);
-                const data = await response.json();
-                console.log("Tournament data:", data);
-                if (response.ok) {
-                    tournamentsData = data;
-                    const tournamentSelect = document.getElementById('tournamentSelect');
-                    const tournamentFilter = document.getElementById('tournamentFilter');
-                    tournamentSelect.innerHTML = '<option value="">Chọn giải đấu</option>';
-                    tournamentFilter.innerHTML = '<option value="">🔽 Lọc theo giải đấu</option>';
-
-                    if (data.length === 0) {
-                        showNotification('Không có giải đấu nào trong hệ thống!', 'warning');
-                    }
-
-                    data.forEach(tournament => {
-                        console.log("Adding tournament:", tournament.TenGiai);
-                        const option1 = document.createElement('option');
-                        option1.value = tournament.IdGiai;
-                        option1.textContent = tournament.TenGiai;
-                        tournamentSelect.appendChild(option1);
-
-                        const option2 = document.createElement('option');
-                        option2.value = tournament.IdGiai;
-                        option2.textContent = tournament.TenGiai;
-                        tournamentFilter.appendChild(option2);
-                    });
-                } else {
-                    showNotification(`Lỗi tải danh sách giải đấu: ${data.error}`, 'error');
-                }
-            } catch (error) {
-                console.error("Error in loadTournaments:", error);
-                showNotification(`Lỗi kết nối khi tải giải đấu: ${error.message}`, 'error');
+                const res = await fetch(`${API_BASE_URL}/GiaiDau/GetAll`);
+                tournaments = await res.json();
+                if (res.ok) {
+                    const html = tournaments.map(t => `<option value="${t.IdGiai}">${t.TenGiai}</option>`).join('');
+                    document.getElementById('tournamentSelect').innerHTML = html;
+                    document.getElementById('tournamentFilter').innerHTML = `<option value="">🔽 Lọc Giải Đấu</option>` + html;
+                    if (!tournaments.length) showNotification('Không có giải đấu!', 'warning');
+                } else showNotification(`Lỗi: ${tournaments.error}`, 'error');
+            } catch (e) {
+                showNotification(`Lỗi kết nối: ${e.message}`, 'error');
             }
-        }
+        };
 
-        // Load teams for modal
-        async function loadTeams() {
+        const loadTeams = async () => {
             try {
-                console.log("Fetching teams from /Team/GetAll");
-                const response = await fetch(`${API_BASE_URL}/Team/GetAll`);
-                const data = await response.json();
-                console.log("Team data:", data);
-                if (response.ok) {
-                    teamsData = data;
-                    // Không gọi updateTeamSelect ở đây để đảm bảo teamSelect rỗng khi chưa chọn giải đấu
-                } else {
-                    showNotification(`Lỗi tải danh sách đội: ${data.error}`, 'error');
-                }
-            } catch (error) {
-                console.error("Error in loadTeams:", error);
-                showNotification(`Lỗi kết nối khi tải đội: ${error.message}`, 'error');
+                const res = await fetch(`${API_BASE_URL}/Team/GetAll`);
+                teams = await res.json();
+                if (!res.ok) showNotification(`Lỗi: ${teams.error}`, 'error');
+            } catch (e) {
+                showNotification(`Lỗi kết nối: ${e.message}`, 'error');
             }
-        }
+        };
 
-        // Update team select based on tournament
-        async function updateTeamSelect(tournamentId = '') {
+        const updateTeamSelect = async (tournamentId = '') => {
             const teamSelect = document.getElementById('teamSelect');
             teamSelect.innerHTML = '<option value="">Chọn đội</option>';
-
-            if (!tournamentId) {
-                // Nếu chưa chọn giải đấu, không hiển thị đội nào
-                return;
+            if (tournamentId) {
+                const filtered = teams.filter(t => t.IdGiai === parseInt(tournamentId));
+                if (filtered.length) teamSelect.innerHTML += filtered.map(t => `<option value="${t.IdTeam}">${t.TenTeam}</option>`).join('');
+                else showNotification('Không có đội trong giải đấu này!', 'warning');
             }
+        };
 
-            let filteredTeams = teamsData.filter(team => team.IdGiai === parseInt(tournamentId));
-            if (filteredTeams.length === 0) {
-                showNotification('Không có đội nào thuộc giải đấu này!', 'warning');
-            }
-
-            filteredTeams.forEach(team => {
-                const option = document.createElement('option');
-                option.value = team.IdTeam;
-                option.textContent = team.TenTeam;
-                teamSelect.appendChild(option);
-            });
-        }
-
-        // Initialize tournament ranking
-        async function initializeTournament() {
-            const tournamentId = document.getElementById('tournamentFilter').value;
-            if (!tournamentId) {
-                showNotification('Vui lòng chọn giải đấu để khởi tạo!', 'error');
-                return;
-            }
-
-            showConfirmModal('Bạn có chắc chắn muốn khởi tạo bảng xếp hạng cho giải đấu này?', async function() {
+        const deleteRanking = (id) => {
+            showConfirmModal('Xóa mục bảng xếp hạng này?', async () => {
                 try {
-                    showLoading();
-                    const response = await fetch(`${API_BASE_URL}/BangXepHang/InitializeForTournament/${tournamentId}`, {
-                        method: 'POST'
-                    });
-                    const result = await response.json();
-                    hideLoading();
-                    if (response.ok) {
-                        showNotification(result.message, 'success');
-                        loadRankings(tournamentId);
-                        closeConfirmModal();
-                    } else {
-                        showNotification(`Lỗi: ${result.error}`, 'error');
-                    }
-                } catch (error) {
-                    hideLoading();
-                    showNotification(`Lỗi kết nối: ${error.message}`, 'error');
-                }
-            });
-        }
-
-        // Update rankings from matches
-        async function updateFromMatches() {
-            const tournamentId = document.getElementById('tournamentFilter').value;
-            if (!tournamentId) {
-                showNotification('Vui lòng chọn giải đấu để cập nhật!', 'error');
-                return;
-            }
-
-            showConfirmModal('Bạn có chắc chắn muốn cập nhật bảng xếp hạng từ kết quả trận đấu?', async function() {
-                try {
-                    showLoading();
-                    const response = await fetch(`${API_BASE_URL}/BangXepHang/UpdateFromMatches/${tournamentId}`, {
-                        method: 'PUT'
-                    });
-                    const result = await response.json();
-                    hideLoading();
-                    if (response.ok) {
-                        showNotification(result.message, 'success');
-                        loadRankings(tournamentId);
-                        closeConfirmModal();
-                    } else {
-                        showNotification(`Lỗi: ${result.error}`, 'error');
-                    }
-                } catch (error) {
-                    hideLoading();
-                    showNotification(`Lỗi kết nối: ${error.message}`, 'error');
-                }
-            });
-        }
-
-        // Delete function
-        async function deleteRanking(rankingId) {
-            showConfirmModal('Bạn có chắc chắn muốn xóa mục bảng xếp hạng này không?', async function() {
-                try {
-                    showLoading();
-                    const response = await fetch(`${API_BASE_URL}/BangXepHang/Delete/${rankingId}`, {
-                        method: 'DELETE'
-                    });
-                    const result = await response.json();
-                    hideLoading();
-                    if (response.ok) {
+                    toggleLoading(true);
+                    const res = await fetch(`${API_BASE_URL}/BangXepHang/Delete/${id}`, { method: 'DELETE' });
+                    const result = await res.json();
+                    toggleLoading(false);
+                    if (res.ok) {
                         showNotification(result.message, 'success');
                         loadRankings(document.getElementById('tournamentFilter').value);
                         closeConfirmModal();
-                    } else {
-                        showNotification(`Lỗi: ${result.error}`, 'error');
-                    }
-                } catch (error) {
-                    hideLoading();
-                    showNotification(`Lỗi kết nối: ${error.message}`, 'error');
+                    } else showNotification(`Lỗi: ${result.error}`, 'error');
+                } catch (e) {
+                    toggleLoading(false);
+                    showNotification(`Lỗi kết nối: ${e.message}`, 'error');
                 }
             });
-        }
+        };
 
-        // Export function
-        function exportRankingData() {
-            if (rankingsData.length === 0) {
-                showNotification('Không có dữ liệu để xuất!', 'error');
-                return;
-            }
-
-            const csvContent = [
-                'Hạng,Tên Đội,Giải Đấu,Trận Đã Đấu,Trận Thắng,Trận Thua,Tỷ Lệ Map,Điểm',
-                ...rankingsData.map(row => 
-                    `${row.HangHienTai},${row.TenTeam},${row.TenGiai},${row.TranDa},${row.TranThang},${row.TranThua},${row.TiLe},${row.Diem}`
-                )
-            ].join('\n');
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
+        const exportData = () => {
+            if (!rankings.length) return showNotification('Không có dữ liệu để xuất!', 'error');
+            const csv = ['Hạng,Đội,Giải,Đã Đấu,Thắng,Thua,Điểm', ...rankings.map(r => `${r.HangHienTai},${r.TenTeam},${r.TenGiai},${r.TranDa},${r.TranThang},${r.TranThua},${r.Diem}`)].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
-            link.setAttribute('href', url);
-            link.setAttribute('download', 'bang_xep_hang.csv');
-            document.body.appendChild(link);
+            link.href = URL.createObjectURL(blob);
+            link.download = 'bang_xep_hang.csv';
             link.click();
-            document.body.removeChild(link);
             showNotification('Xuất dữ liệu thành công!', 'success');
-        }
+        };
 
-        // Form submission handler
-        document.getElementById('rankingForm').addEventListener('submit', async function(e) {
+        document.getElementById('rankingForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = {
                 IdGiai: parseInt(document.getElementById('tournamentSelect').value),
@@ -528,80 +323,53 @@
             };
 
             if (!formData.IdGiai || !formData.IdTeam) {
-                document.getElementById('rankingModalAlert').innerHTML = 
-                    '<div class="alert alert-error">⚠️ Vui lòng chọn giải đấu và đội!</div>';
+                document.getElementById('modalAlert').innerHTML = '<div class="alert alert-error">⚠️ Chọn giải đấu và đội!</div>';
                 return;
             }
 
             try {
-                showLoading();
-                const url = currentEditingRankingId ? `${API_BASE_URL}/BangXepHang/Update/${currentEditingRankingId}` : `${API_BASE_URL}/BangXepHang/Create`;
-                const method = currentEditingRankingId ? 'PUT' : 'POST';
-                const response = await fetch(url, {
-                    method: method,
+                toggleLoading(true);
+                const url = currentEditingId ? `${API_BASE_URL}/BangXepHang/Update/${currentEditingId}` : `${API_BASE_URL}/BangXepHang/Create`;
+                const method = currentEditingId ? 'PUT' : 'POST';
+                const res = await fetch(url, {
+                    method,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(formData)
                 });
-                const result = await response.json();
-                hideLoading();
-                if (response.ok) {
-                    document.getElementById('rankingModalAlert').innerHTML = 
-                        `<div class="alert alert-success">✅ ${result.message}</div>`;
+                const result = await res.json();
+                toggleLoading(false);
+                if (res.ok) {
+                    document.getElementById('modalAlert').innerHTML = `<div class="alert alert-success">✅ ${result.message}</div>`;
                     setTimeout(() => {
-                        closeRankingModal();
+                        closeModal();
                         loadRankings(document.getElementById('tournamentFilter').value);
                     }, 1500);
-                } else {
-                    document.getElementById('rankingModalAlert').innerHTML = 
-                        `<div class="alert alert-error">❌ ${result.error}</div>`;
-                }
-            } catch (error) {
-                hideLoading();
-                document.getElementById('rankingModalAlert').innerHTML = 
-                    `<div class="alert alert-error">❌ Lỗi kết nối: ${error.message}</div>`;
+                } else document.getElementById('modalAlert').innerHTML = `<div class="alert alert-error">❌ ${result.error}</div>`;
+            } catch (e) {
+                toggleLoading(false);
+                document.getElementById('modalAlert').innerHTML = `<div class="alert alert-error">❌ Lỗi kết nối: ${e.message}</div>`;
             }
         });
 
-        // Initialize the page
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', () => {
             loadRankings();
             loadTournaments();
             loadTeams();
 
-            // Initialize search functionality
-            document.getElementById('searchInput').addEventListener('input', function() {
-                const searchValue = this.value.toLowerCase();
-                const filteredData = rankingsData.filter(row =>
-                    row.TenTeam.toLowerCase().includes(searchValue) ||
-                    row.TenGiai.toLowerCase().includes(searchValue)
-                );
-                rankingsData = filteredData;
-                renderRankingsTable();
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                const search = e.target.value.toLowerCase();
+                rankings = rankings.filter(r => r.TenTeam.toLowerCase().includes(search) || r.TenGiai.toLowerCase().includes(search));
+                renderTable();
             });
 
-            // Initialize tournament filter
-            document.getElementById('tournamentFilter').addEventListener('change', function() {
-                loadRankings(this.value);
-            });
+            document.getElementById('tournamentFilter').addEventListener('change', (e) => loadRankings(e.target.value));
+            document.getElementById('tournamentSelect').addEventListener('change', (e) => updateTeamSelect(e.target.value));
 
-            // Update team select when tournament changes
-            document.getElementById('tournamentSelect').addEventListener('change', function() {
-                updateTeamSelect(this.value);
-            });
+            window.onclick = (e) => {
+                if (e.target === document.getElementById('modal')) closeModal();
+                if (e.target === document.getElementById('confirmModal')) closeConfirmModal();
+            };
         });
-
-        // Close modals when clicking outside
-        window.onclick = function(event) {
-            const rankingModal = document.getElementById('rankingModal');
-            const confirmModal = document.getElementById('confirmModal');
-
-            if (event.target === rankingModal) {
-                closeRankingModal();
-            }
-            if (event.target === confirmModal) {
-                closeConfirmModal();
-            }
-        };
     </script>
 </body>
 </html>
