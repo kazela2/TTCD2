@@ -1088,7 +1088,7 @@ def get_matches_by_map(id_map):
         return jsonify(result)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-    
+
     
     
 # ===== BANG XEP HANG ROUTES =====
@@ -1204,6 +1204,439 @@ def get_bang_xep_hang_by_giai(id_giai):
                 "TiLe": f"{row.MapThang}/{row.MapThua}" if row.MapThang and row.MapThua else "0/0"
             })
 
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+    # ===== CHI TIET MAP ROUTES =====
+
+@app.route('/ChiTietMap/GetAll', methods=['GET'])
+def get_all_chi_tiet_map():
+    try:
+        cursor = con.cursor()
+        cursor.execute("""
+            SELECT ctm.IdChiTiet, ctm.IdTran, ctm.IdMap, ctm.ThuTuMap, 
+                   ctm.ScoreTeam1, ctm.ScoreTeam2, ctm.TeamThang,
+                   td.VongDau, td.NgayThiDau,
+                   t1.TenTeam as TenTeam1, t2.TenTeam as TenTeam2,
+                   tw.TenTeam as TenTeamThang, m.TenMap
+            FROM ChiTietMap ctm
+            LEFT JOIN TranDau td ON ctm.IdTran = td.IdTran
+            LEFT JOIN Team t1 ON td.Team1 = t1.IdTeam
+            LEFT JOIN Team t2 ON td.Team2 = t2.IdTeam
+            LEFT JOIN Team tw ON ctm.TeamThang = tw.IdTeam
+            LEFT JOIN Map m ON ctm.IdMap = m.IdMap
+            ORDER BY ctm.IdTran, ctm.ThuTuMap
+        """)
+        rows = cursor.fetchall()
+
+        result = []
+        for row in rows:
+            result.append({
+                "IdChiTiet": row.IdChiTiet,
+                "IdTran": row.IdTran if row.IdTran else None,
+                "IdMap": row.IdMap if row.IdMap else None,
+                "TenMap": row.TenMap if row.TenMap else "",
+                "ThuTuMap": row.ThuTuMap if row.ThuTuMap else 0,
+                "ScoreTeam1": row.ScoreTeam1 if row.ScoreTeam1 else 0,
+                "ScoreTeam2": row.ScoreTeam2 if row.ScoreTeam2 else 0,
+                "TeamThang": row.TeamThang if row.TeamThang else None,
+                "TenTeam1": row.TenTeam1 if row.TenTeam1 else "",
+                "TenTeam2": row.TenTeam2 if row.TenTeam2 else "",
+                "TenTeamThang": row.TenTeamThang if row.TenTeamThang else "",
+                "VongDau": row.VongDau if row.VongDau else "",
+                "NgayThiDau": row.NgayThiDau.strftime('%Y-%m-%d %H:%M:%S') if row.NgayThiDau else None
+            })
+
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/ChiTietMap/GetById/<int:id_chi_tiet>', methods=['GET'])
+def get_chi_tiet_map_by_id(id_chi_tiet):
+    try:
+        cursor = con.cursor()
+        cursor.execute("""
+            SELECT ctm.IdChiTiet, ctm.IdTran, ctm.IdMap, ctm.ThuTuMap, 
+                   ctm.ScoreTeam1, ctm.ScoreTeam2, ctm.TeamThang,
+                   td.VongDau, td.NgayThiDau,
+                   t1.TenTeam as TenTeam1, t2.TenTeam as TenTeam2,
+                   tw.TenTeam as TenTeamThang, m.TenMap
+            FROM ChiTietMap ctm
+            LEFT JOIN TranDau td ON ctm.IdTran = td.IdTran
+            LEFT JOIN Team t1 ON td.Team1 = t1.IdTeam
+            LEFT JOIN Team t2 ON td.Team2 = t2.IdTeam
+            LEFT JOIN Team tw ON ctm.TeamThang = tw.IdTeam
+            LEFT JOIN Map m ON ctm.IdMap = m.IdMap
+            WHERE ctm.IdChiTiet = ?
+        """, (id_chi_tiet,))
+        
+        row = cursor.fetchone()
+        cursor.close()
+
+        if not row:
+            return jsonify({'error': 'Chi tiết map không tồn tại'}), 404
+
+        result = {
+            "IdChiTiet": row.IdChiTiet,
+            "IdTran": row.IdTran if row.IdTran else None,
+            "IdMap": row.IdMap if row.IdMap else None,
+            "TenMap": row.TenMap if row.TenMap else "",
+            "ThuTuMap": row.ThuTuMap if row.ThuTuMap else 0,
+            "ScoreTeam1": row.ScoreTeam1 if row.ScoreTeam1 else 0,
+            "ScoreTeam2": row.ScoreTeam2 if row.ScoreTeam2 else 0,
+            "TeamThang": row.TeamThang if row.TeamThang else None,
+            "TenTeam1": row.TenTeam1 if row.TenTeam1 else "",
+            "TenTeam2": row.TenTeam2 if row.TenTeam2 else "",
+            "TenTeamThang": row.TenTeamThang if row.TenTeamThang else "",
+            "VongDau": row.VongDau if row.VongDau else "",
+            "NgayThiDau": row.NgayThiDau.strftime('%Y-%m-%d %H:%M:%S') if row.NgayThiDau else None
+        }
+
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/ChiTietMap/GetByTran/<int:id_tran>', methods=['GET'])
+def get_chi_tiet_map_by_tran(id_tran):
+    try:
+        cursor = con.cursor()
+        cursor.execute("""
+            SELECT ctm.IdChiTiet, ctm.IdTran, ctm.IdMap, ctm.ThuTuMap, 
+                   ctm.ScoreTeam1, ctm.ScoreTeam2, ctm.TeamThang,
+                   td.VongDau, td.NgayThiDau,
+                   t1.TenTeam as TenTeam1, t2.TenTeam as TenTeam2,
+                   tw.TenTeam as TenTeamThang, m.TenMap
+            FROM ChiTietMap ctm
+            LEFT JOIN TranDau td ON ctm.IdTran = td.IdTran
+            LEFT JOIN Team t1 ON td.Team1 = t1.IdTeam
+            LEFT JOIN Team t2 ON td.Team2 = t2.IdTeam
+            LEFT JOIN Team tw ON ctm.TeamThang = tw.IdTeam
+            LEFT JOIN Map m ON ctm.IdMap = m.IdMap
+            WHERE ctm.IdTran = ?
+            ORDER BY ctm.ThuTuMap
+        """, (id_tran,))
+        rows = cursor.fetchall()
+
+        result = []
+        for row in rows:
+            result.append({
+                "IdChiTiet": row.IdChiTiet,
+                "IdTran": row.IdTran if row.IdTran else None,
+                "IdMap": row.IdMap if row.IdMap else None,
+                "TenMap": row.TenMap if row.TenMap else "",
+                "ThuTuMap": row.ThuTuMap if row.ThuTuMap else 0,
+                "ScoreTeam1": row.ScoreTeam1 if row.ScoreTeam1 else 0,
+                "ScoreTeam2": row.ScoreTeam2 if row.ScoreTeam2 else 0,
+                "TeamThang": row.TeamThang if row.TeamThang else None,
+                "TenTeam1": row.TenTeam1 if row.TenTeam1 else "",
+                "TenTeam2": row.TenTeam2 if row.TenTeam2 else "",
+                "TenTeamThang": row.TenTeamThang if row.TenTeamThang else "",
+                "VongDau": row.VongDau if row.VongDau else "",
+                "NgayThiDau": row.NgayThiDau.strftime('%Y-%m-%d %H:%M:%S') if row.NgayThiDau else None
+            })
+
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/ChiTietMap/Create', methods=['POST'])
+def create_chi_tiet_map():
+    try:
+        data = request.json
+        id_tran = data.get('IdTran')
+        id_map = data.get('IdMap')
+        thu_tu_map = data.get('ThuTuMap')
+        score_team1 = data.get('ScoreTeam1', 0)
+        score_team2 = data.get('ScoreTeam2', 0)
+        team_thang = data.get('TeamThang')
+
+        if not id_tran or not id_map or not thu_tu_map:
+            return jsonify({'error': 'ID trận đấu, ID map và thứ tự map là bắt buộc'}), 400
+
+        cursor = con.cursor()
+        
+        # Kiểm tra trận đấu có tồn tại không
+        cursor.execute("SELECT COUNT(*) FROM TranDau WHERE IdTran = ?", (id_tran,))
+        count = cursor.fetchone()[0]
+        if count == 0:
+            return jsonify({'error': 'Trận đấu không tồn tại'}), 400
+
+        # Kiểm tra map có tồn tại không
+        cursor.execute("SELECT COUNT(*) FROM Map WHERE IdMap = ?", (id_map,))
+        count = cursor.fetchone()[0]
+        if count == 0:
+            return jsonify({'error': 'Map không tồn tại'}), 400
+
+        # Kiểm tra team thắng có thuộc trận đấu không (nếu có)
+        if team_thang:
+            cursor.execute("""
+                SELECT COUNT(*) FROM TranDau 
+                WHERE IdTran = ? AND (Team1 = ? OR Team2 = ?)
+            """, (id_tran, team_thang, team_thang))
+            count = cursor.fetchone()[0]
+            if count == 0:
+                return jsonify({'error': 'Team thắng phải là một trong hai team thi đấu'}), 400
+
+        # Kiểm tra thứ tự map đã tồn tại trong trận đấu này chưa
+        cursor.execute("""
+            SELECT COUNT(*) FROM ChiTietMap 
+            WHERE IdTran = ? AND ThuTuMap = ?
+        """, (id_tran, thu_tu_map))
+        count = cursor.fetchone()[0]
+        if count > 0:
+            return jsonify({'error': 'Thứ tự map này đã tồn tại trong trận đấu'}), 400
+
+        # Thêm chi tiết map mới
+        query = """
+            INSERT INTO ChiTietMap (IdTran, IdMap, ThuTuMap, ScoreTeam1, ScoreTeam2, TeamThang)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """
+        cursor.execute(query, (id_tran, id_map, thu_tu_map, score_team1, score_team2, team_thang))
+        con.commit()
+        cursor.close()
+
+        return jsonify({'message': 'Tạo chi tiết map thành công'}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/ChiTietMap/Update/<int:id_chi_tiet>', methods=['PUT'])
+def update_chi_tiet_map(id_chi_tiet):
+    try:
+        data = request.json
+        id_tran = data.get('IdTran')
+        id_map = data.get('IdMap')
+        thu_tu_map = data.get('ThuTuMap')
+        score_team1 = data.get('ScoreTeam1', 0)
+        score_team2 = data.get('ScoreTeam2', 0)
+        team_thang = data.get('TeamThang')
+
+        if not id_tran or not id_map or not thu_tu_map:
+            return jsonify({'error': 'ID trận đấu, ID map và thứ tự map là bắt buộc'}), 400
+
+        cursor = con.cursor()
+        
+        # Kiểm tra chi tiết map có tồn tại không
+        cursor.execute("SELECT COUNT(*) FROM ChiTietMap WHERE IdChiTiet = ?", (id_chi_tiet,))
+        count = cursor.fetchone()[0]
+        if count == 0:
+            return jsonify({'error': 'Chi tiết map không tồn tại'}), 404
+
+        # Kiểm tra trận đấu có tồn tại không
+        cursor.execute("SELECT COUNT(*) FROM TranDau WHERE IdTran = ?", (id_tran,))
+        count = cursor.fetchone()[0]
+        if count == 0:
+            return jsonify({'error': 'Trận đấu không tồn tại'}), 400
+
+        # Kiểm tra map có tồn tại không
+        cursor.execute("SELECT COUNT(*) FROM Map WHERE IdMap = ?", (id_map,))
+        count = cursor.fetchone()[0]
+        if count == 0:
+            return jsonify({'error': 'Map không tồn tại'}), 400
+
+        # Kiểm tra team thắng có thuộc trận đấu không (nếu có)
+        if team_thang:
+            cursor.execute("""
+                SELECT COUNT(*) FROM TranDau 
+                WHERE IdTran = ? AND (Team1 = ? OR Team2 = ?)
+            """, (id_tran, team_thang, team_thang))
+            count = cursor.fetchone()[0]
+            if count == 0:
+                return jsonify({'error': 'Team thắng phải là một trong hai team thi đấu'}), 400
+
+        # Kiểm tra thứ tự map đã tồn tại trong trận đấu này chưa (trừ chính nó)
+        cursor.execute("""
+            SELECT COUNT(*) FROM ChiTietMap 
+            WHERE IdTran = ? AND ThuTuMap = ? AND IdChiTiet != ?
+        """, (id_tran, thu_tu_map, id_chi_tiet))
+        count = cursor.fetchone()[0]
+        if count > 0:
+            return jsonify({'error': 'Thứ tự map này đã tồn tại trong trận đấu'}), 400
+
+        # Cập nhật thông tin
+        query = """
+            UPDATE ChiTietMap 
+            SET IdTran = ?, IdMap = ?, ThuTuMap = ?, ScoreTeam1 = ?, 
+                ScoreTeam2 = ?, TeamThang = ?
+            WHERE IdChiTiet = ?
+        """
+        cursor.execute(query, (id_tran, id_map, thu_tu_map, score_team1, 
+                              score_team2, team_thang, id_chi_tiet))
+        con.commit()
+        cursor.close()
+        
+        return jsonify({'message': 'Cập nhật chi tiết map thành công'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/ChiTietMap/Delete/<int:id_chi_tiet>', methods=['DELETE'])
+def delete_chi_tiet_map(id_chi_tiet):
+    try:
+        cursor = con.cursor()
+        
+        # Kiểm tra chi tiết map có tồn tại không
+        cursor.execute("SELECT COUNT(*) FROM ChiTietMap WHERE IdChiTiet = ?", (id_chi_tiet,))
+        count = cursor.fetchone()[0]
+        if count == 0:
+            return jsonify({'error': 'Chi tiết map không tồn tại'}), 404
+
+        # Xóa chi tiết map
+        cursor.execute("DELETE FROM ChiTietMap WHERE IdChiTiet = ?", (id_chi_tiet,))
+        con.commit()
+        cursor.close()
+        
+        return jsonify({'message': 'Xóa chi tiết map thành công'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/ChiTietMap/UpdateScore/<int:id_chi_tiet>', methods=['PUT'])
+def update_score_chi_tiet_map(id_chi_tiet):
+    """Cập nhật điểm số và team thắng cho một map"""
+    try:
+        data = request.json
+        score_team1 = data.get('ScoreTeam1', 0)
+        score_team2 = data.get('ScoreTeam2', 0)
+
+        cursor = con.cursor()
+        
+        # Kiểm tra chi tiết map có tồn tại không
+        cursor.execute("SELECT IdTran FROM ChiTietMap WHERE IdChiTiet = ?", (id_chi_tiet,))
+        row = cursor.fetchone()
+        if not row:
+            return jsonify({'error': 'Chi tiết map không tồn tại'}), 404
+
+        id_tran = row.IdTran
+
+        # Lấy thông tin team từ trận đấu
+        cursor.execute("SELECT Team1, Team2 FROM TranDau WHERE IdTran = ?", (id_tran,))
+        tran_row = cursor.fetchone()
+        if not tran_row:
+            return jsonify({'error': 'Trận đấu không tồn tại'}), 404
+
+        # Xác định team thắng
+        team_thang = None
+        if score_team1 > score_team2:
+            team_thang = tran_row.Team1
+        elif score_team2 > score_team1:
+            team_thang = tran_row.Team2
+
+        # Cập nhật điểm số và team thắng
+        query = """
+            UPDATE ChiTietMap 
+            SET ScoreTeam1 = ?, ScoreTeam2 = ?, TeamThang = ?
+            WHERE IdChiTiet = ?
+        """
+        cursor.execute(query, (score_team1, score_team2, team_thang, id_chi_tiet))
+        con.commit()
+        cursor.close()
+        
+        return jsonify({
+            'message': 'Cập nhật điểm số thành công',
+            'ScoreTeam1': score_team1,
+            'ScoreTeam2': score_team2,
+            'TeamThang': team_thang
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+    # Thêm endpoint này vào file backend Python của bạn
+
+@app.route('/ChiTietMap/GetByMap/<int:id_map>', methods=['GET'])
+def get_chi_tiet_map_by_map(id_map):
+    """Lấy tất cả chi tiết map theo IdMap"""
+    try:
+        cursor = con.cursor()
+        cursor.execute("""
+            SELECT ctm.IdChiTiet, ctm.IdTran, ctm.IdMap, ctm.ThuTuMap, 
+                   ctm.ScoreTeam1, ctm.ScoreTeam2, ctm.TeamThang,
+                   td.VongDau, td.NgayThiDau, td.TrangThai,
+                   t1.TenTeam as TenTeam1, t2.TenTeam as TenTeam2,
+                   tw.TenTeam as TenTeamThang, m.TenMap,
+                   gd.TenGiai
+            FROM ChiTietMap ctm
+            LEFT JOIN TranDau td ON ctm.IdTran = td.IdTran
+            LEFT JOIN Team t1 ON td.Team1 = t1.IdTeam
+            LEFT JOIN Team t2 ON td.Team2 = t2.IdTeam
+            LEFT JOIN Team tw ON ctm.TeamThang = tw.IdTeam
+            LEFT JOIN Map m ON ctm.IdMap = m.IdMap
+            LEFT JOIN GiaiDau gd ON td.IdGiai = gd.IdGiai
+            WHERE ctm.IdMap = ?
+            ORDER BY td.NgayThiDau DESC, ctm.IdTran, ctm.ThuTuMap
+        """, (id_map,))
+        rows = cursor.fetchall()
+
+        result = []
+        for row in rows:
+            result.append({
+                "IdChiTiet": row.IdChiTiet,
+                "IdTran": row.IdTran if row.IdTran else None,
+                "IdMap": row.IdMap if row.IdMap else None,
+                "TenMap": row.TenMap if row.TenMap else "",
+                "ThuTuMap": row.ThuTuMap if row.ThuTuMap else 0,
+                "ScoreTeam1": row.ScoreTeam1 if row.ScoreTeam1 else 0,
+                "ScoreTeam2": row.ScoreTeam2 if row.ScoreTeam2 else 0,
+                "TeamThang": row.TeamThang if row.TeamThang else None,
+                "TenTeam1": row.TenTeam1 if row.TenTeam1 else "",
+                "TenTeam2": row.TenTeam2 if row.TenTeam2 else "",
+                "TenTeamThang": row.TenTeamThang if row.TenTeamThang else "",
+                "VongDau": row.VongDau if row.VongDau else "",
+                "TrangThai": row.TrangThai if row.TrangThai else "",
+                "TenGiai": row.TenGiai if row.TenGiai else "",
+                "NgayThiDau": row.NgayThiDau.strftime('%Y-%m-%d %H:%M:%S') if row.NgayThiDau else None
+            })
+
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/Map/GetStatistics/<int:id_map>', methods=['GET'])
+def get_map_statistics(id_map):
+    """Lấy thống kê của một map"""
+    try:
+        cursor = con.cursor()
+        
+        # Thống kê tổng quan
+        cursor.execute("""
+            SELECT 
+                COUNT(*) as TongSoTran,
+                AVG(CAST(ctm.ScoreTeam1 + ctm.ScoreTeam2 AS FLOAT)) as DiemTrungBinh,
+                MAX(ctm.ScoreTeam1 + ctm.ScoreTeam2) as DiemCaoNhat,
+                COUNT(CASE WHEN ctm.TeamThang IS NOT NULL THEN 1 END) as TranCoKetQua
+            FROM ChiTietMap ctm
+            WHERE ctm.IdMap = ?
+        """, (id_map,))
+        
+        stats_row = cursor.fetchone()
+        
+        # Thống kê team thắng nhiều nhất
+        cursor.execute("""
+            SELECT TOP 3
+                t.TenTeam,
+                COUNT(*) as SoLanThang
+            FROM ChiTietMap ctm
+            JOIN Team t ON ctm.TeamThang = t.IdTeam
+            WHERE ctm.IdMap = ?
+            GROUP BY t.TenTeam, ctm.TeamThang
+            ORDER BY COUNT(*) DESC
+        """, (id_map,))
+        
+        top_teams = cursor.fetchall()
+        
+        cursor.close()
+        
+        result = {
+            "TongSoTran": stats_row.TongSoTran if stats_row else 0,
+            "DiemTrungBinh": round(stats_row.DiemTrungBinh, 2) if stats_row and stats_row.DiemTrungBinh else 0,
+            "DiemCaoNhat": stats_row.DiemCaoNhat if stats_row else 0,
+            "TranCoKetQua": stats_row.TranCoKetQua if stats_row else 0,
+            "TopTeams": [
+                {
+                    "TenTeam": team.TenTeam,
+                    "SoLanThang": team.SoLanThang
+                } for team in top_teams
+            ]
+        }
+        
         return jsonify(result)
     except Exception as e:
         return jsonify({'error': str(e)}), 500

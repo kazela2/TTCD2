@@ -1,0 +1,579 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+  }
+  
+  /* Sidebar Styles */
+  .sidebar {
+    width: 280px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-right: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 20px;
+    min-height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 1000;
+  }
+  
+  .sidebar h2 {
+    color: white;
+    margin-bottom: 30px;
+    text-align: center;
+    font-size: 24px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  }
+  
+  .sidebar a {
+    display: block;
+    color: white;
+    text-decoration: none;
+    padding: 15px 20px;
+    margin-bottom: 10px;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  .sidebar a:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateX(5px);
+  }
+  
+  .sidebar a.active {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.4);
+  }
+  
+  /* Main Content */
+  .main-content {
+    flex: 1;
+    margin-left: 280px;
+    padding: 20px;
+    min-height: 100vh;
+  }
+  
+  /* Auto-fix layout for elements after sidebar */
+  .controls,
+  .statistics,
+  .data-table {
+    margin-left: 280px;
+    margin-right: 20px;
+    margin-bottom: 25px;
+  }
+  
+  .controls:first-of-type {
+    margin-top: 20px;
+  }
+  
+  /* Ensure proper horizontal layout */
+  body {
+    position: relative;
+  }
+  
+  /* Controls Section */
+  .controls {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 25px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  .form-row {
+    display: flex;
+    gap: 20px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+  
+  .form-group {
+    flex: 1;
+    min-width: 200px;
+  }
+  
+  .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #2d3748;
+    font-size: 14px;
+  }
+  
+  .form-group select,
+  .form-group input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    background: white;
+  }
+  
+  .form-group select:focus,
+  .form-group input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+  
+  /* Buttons */
+  .btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+    min-width: 120px;
+  }
+  
+  .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+  
+  .btn-success {
+    background: linear-gradient(135deg, #48bb78, #38a169);
+    color: white;
+  }
+  
+  .btn-success:hover {
+    background: linear-gradient(135deg, #38a169, #2f855a);
+  }
+  
+  .btn-warning {
+    background: linear-gradient(135deg, #ed8936, #dd6b20);
+    color: white;
+  }
+  
+  .btn-warning:hover {
+    background: linear-gradient(135deg, #dd6b20, #c05621);
+  }
+  
+  .btn-danger {
+    background: linear-gradient(135deg, #f56565, #e53e3e);
+    color: white;
+  }
+  
+  .btn-danger:hover {
+    background: linear-gradient(135deg, #e53e3e, #c53030);
+  }
+  
+  .btn:not(.btn-success):not(.btn-warning):not(.btn-danger) {
+    background: linear-gradient(135deg, #a0aec0, #718096);
+    color: white;
+  }
+  
+  .btn:not(.btn-success):not(.btn-warning):not(.btn-danger):hover {
+    background: linear-gradient(135deg, #718096, #4a5568);
+  }
+  
+  /* Statistics Section */
+  .statistics {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 25px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  .statistics h3 {
+    color: #2d3748;
+    margin-bottom: 20px;
+    font-size: 20px;
+  }
+  
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+  }
+  
+  .stat-item {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  }
+  
+  .stat-value {
+    font-size: 32px;
+    font-weight: bold;
+    margin-bottom: 8px;
+  }
+  
+  .stat-label {
+    font-size: 14px;
+    opacity: 0.9;
+  }
+  
+  /* Data Table Section */
+  .data-table {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    overflow: hidden;
+  }
+  
+  /* Loading and No Data States */
+  .loading, .no-data {
+    text-align: center;
+    padding: 60px 20px;
+    color: #4a5568;
+    font-size: 18px;
+  }
+  
+  .loading p, .no-data p {
+    font-size: 16px;
+    color: #718096;
+  }
+  
+  /* Table Styles */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+  
+  table thead {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+  }
+  
+  table th {
+    padding: 15px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 14px;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  table th:first-child {
+    border-top-left-radius: 10px;
+  }
+  
+  table th:last-child {
+    border-top-right-radius: 10px;
+  }
+  
+  table tbody tr {
+    transition: all 0.3s ease;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  table tbody tr:hover {
+    background: rgba(102, 126, 234, 0.05);
+    transform: scale(1.01);
+  }
+  
+  table tbody tr:last-child {
+    border-bottom: none;
+  }
+  
+  table td {
+    padding: 15px 12px;
+    font-size: 14px;
+    color: #2d3748;
+    vertical-align: middle;
+  }
+  
+  table td:last-child {
+    text-align: center;
+  }
+  
+  table td button {
+    margin: 0 2px;
+    padding: 8px 12px;
+    min-width: auto;
+    font-size: 12px;
+  }
+  
+  /* Modal Styles */
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
+    animation: fadeIn 0.3s ease;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  .modal-content {
+    background: white;
+    margin: 5% auto;
+    padding: 0;
+    border-radius: 15px;
+    width: 90%;
+    max-width: 600px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideIn 0.3s ease;
+    overflow: hidden;
+  }
+  
+  @keyframes slideIn {
+    from { 
+      opacity: 0;
+      transform: translateY(-50px);
+    }
+    to { 
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .modal-header {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    padding: 20px 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .modal-header h2 {
+    margin: 0;
+    font-size: 20px;
+  }
+  
+  .close {
+    color: white;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+  }
+  
+  .close:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: rotate(90deg);
+  }
+  
+  .modal form {
+    padding: 25px;
+  }
+  
+  /* Alert Styles */
+  .alert {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  
+  .alert-success {
+    background: linear-gradient(135deg, #c7f0db, #a3dbc1);
+    color: #2f855a;
+    border: 1px solid #9ae6b4;
+  }
+  
+  .alert-error {
+    background: linear-gradient(135deg, #fed7d7, #fc8181);
+    color: #c53030;
+    border: 1px solid #feb2b2;
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 1024px) {
+    .sidebar {
+      width: 250px;
+    }
+    
+    .main-content {
+      margin-left: 250px;
+    }
+    
+    .form-row {
+      flex-direction: column;
+    }
+    
+    .form-group {
+      min-width: 100%;
+    }
+    
+    .stat-grid {
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+  }
+  
+  @media (max-width: 768px) {
+    body {
+      flex-direction: column;
+    }
+    
+    .sidebar {
+      width: 100%;
+      position: relative;
+      min-height: auto;
+      padding: 15px;
+    }
+    
+    .main-content {
+      margin-left: 0;
+      padding: 15px;
+    }
+    
+    .controls {
+      padding: 20px;
+    }
+    
+    .modal-content {
+      width: 95%;
+      margin: 10% auto;
+    }
+    
+    table {
+      font-size: 12px;
+    }
+    
+    table th,
+    table td {
+      padding: 10px 8px;
+    }
+    
+    .stat-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .stat-item {
+      padding: 15px;
+    }
+    
+    .stat-value {
+      font-size: 24px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .sidebar h2 {
+      font-size: 20px;
+    }
+    
+    .sidebar a {
+      padding: 12px 15px;
+      font-size: 14px;
+    }
+    
+    .controls {
+      padding: 15px;
+    }
+    
+    .data-table {
+      padding: 15px;
+    }
+    
+    .modal form {
+      padding: 20px;
+    }
+    
+    table {
+      display: block;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+    
+    .btn {
+      padding: 10px 15px;
+      font-size: 12px;
+      min-width: 100px;
+    }
+  }
+  
+  /* Scrollbar Styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #764ba2, #667eea);
+  }
+  
+  /* Additional Interactive Effects */
+  .form-group select:hover,
+  .form-group input:hover {
+    border-color: #cbd5e0;
+  }
+  
+  table tbody tr:nth-child(even) {
+    background: rgba(247, 250, 252, 0.5);
+  }
+  
+  .stat-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  }
+  
+  /* Focus states for accessibility */
+  .btn:focus,
+  select:focus,
+  input:focus {
+    outline: 2px solid rgba(102, 126, 234, 0.5);
+    outline-offset: 2px;
+  }
+  
+  /* Animation for table rows */
+  @keyframes slideInRow {
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  
+  table tbody tr {
+    animation: slideInRow 0.3s ease forwards;
+  }
