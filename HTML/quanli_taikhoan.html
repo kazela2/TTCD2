@@ -73,8 +73,9 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h4>➕ Thêm Quản Trị Viên Mới</h4>
-                <span class="close" onclick="closeModal('addModal')">&times;</span>
+                <span class="close" onclick="closeModal('addModal')">×</span>
             </div>
+            <div id="addModalAlert"></div>
             <div class="modal-body">
                 <form id="addForm">
                     <div class="form-group">
@@ -116,8 +117,9 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h4>✏️ Sửa Thông Tin Quản Trị Viên</h4>
-                <span class="close" onclick="closeModal('editModal')">&times;</span>
+                <span class="close" onclick="closeModal('editModal')">×</span>
             </div>
+            <div id="editModalAlert"></div>
             <div class="modal-body">
                 <form id="editForm">
                     <input type="hidden" id="editId">
@@ -154,8 +156,9 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h4>🔑 Đổi Mật Khẩu</h4>
-                <span class="close" onclick="closeModal('changePasswordModal')">&times;</span>
+                <span class="close" onclick="closeModal('changePasswordModal')">×</span>
             </div>
+            <div id="changePasswordModalAlert"></div>
             <div class="modal-body">
                 <form id="changePasswordForm">
                     <input type="hidden" id="changePasswordId">
@@ -181,9 +184,40 @@
         </div>
     </div>
 
+    <!-- Notification -->
+    <div id="notification" class="notification" style="display: none;">
+        <span id="notificationMessage"></span>
+        <span class="notification-close" onclick="closeNotification()">×</span>
+    </div>
+
     <script>
-        // Dữ liệu sẽ được load từ API
+        const API_BASE_URL = 'http://localhost:5000';
         let adminData = [];
+
+        // Notification functions
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            const messageElement = document.getElementById('notificationMessage');
+            messageElement.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.style.display = 'block';
+            setTimeout(closeNotification, 3000);
+        }
+
+        function closeNotification() {
+            document.getElementById('notification').style.display = 'none';
+        }
+
+        // Show/hide loading
+        function showLoading() {
+            document.getElementById('loadingDiv').style.display = 'flex';
+            document.getElementById('dataTable').style.display = 'none';
+            document.getElementById('noDataDiv').style.display = 'none';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingDiv').style.display = 'none';
+        }
 
         // Hiển thị dữ liệu
         function displayData(data = adminData) {
@@ -191,6 +225,7 @@
             const noDataDiv = document.getElementById('noDataDiv');
             const dataTable = document.getElementById('dataTable');
 
+            hideLoading();
             if (data.length === 0) {
                 dataTable.style.display = 'none';
                 noDataDiv.style.display = 'block';
@@ -236,11 +271,11 @@
         // Modal functions
         function openModal(modalId) {
             document.getElementById(modalId).style.display = 'block';
+            document.getElementById(`${modalId}Alert`).innerHTML = '';
         }
 
         function closeModal(modalId) {
             document.getElementById(modalId).style.display = 'none';
-            // Reset form
             const form = document.querySelector(`#${modalId} form`);
             if (form) form.reset();
         }
@@ -249,15 +284,25 @@
             openModal('addModal');
         }
 
-        function openEditModal(id) {
-            const admin = adminData.find(a => a.IdQuanTri === id);
-            if (admin) {
-                document.getElementById('editId').value = admin.IdQuanTri;
-                document.getElementById('editTenDangNhap').value = admin.TenDangNhap;
-                document.getElementById('editHoTen').value = admin.HoTen;
-                document.getElementById('editVaiTro').value = admin.VaiTro;
-                document.getElementById('editMoTa').value = admin.MoTa || '';
-                openModal('editModal');
+        async function openEditModal(id) {
+            try {
+                showLoading();
+                const response = await fetch(`${API_BASE_URL}/QuanTri/GetById/${id}`);
+                const data = await response.json();
+                hideLoading();
+                if (response.ok) {
+                    document.getElementById('editId').value = data.IdQuanTri;
+                    document.getElementById('editTenDangNhap').value = data.TenDangNhap;
+                    document.getElementById('editHoTen').value = data.HoTen;
+                    document.getElementById('editVaiTro').value = data.VaiTro;
+                    document.getElementById('editMoTa').value = data.MoTa || '';
+                    openModal('editModal');
+                } else {
+                    showNotification(`Lỗi: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                showNotification(`Lỗi kết nối: ${error.message}`, 'error');
             }
         }
 
@@ -266,87 +311,219 @@
             openModal('changePasswordModal');
         }
 
-        // CRUD Operations (Sẽ kết nối API)
-        function addAdmin() {
-            const tenDangNhap = document.getElementById('addTenDangNhap').value;
+        // CRUD Operations
+        async function addAdmin() {
+            const tenDangNhap = document.getElementById('addTenDangNhap').value.trim();
             const matKhau = document.getElementById('addMatKhau').value;
-            const hoTen = document.getElementById('addHoTen').value;
+            const hoTen = document.getElementById('addHoTen').value.trim();
             const vaiTro = document.getElementById('addVaiTro').value;
-            const moTa = document.getElementById('addMoTa').value;
+            const moTa = document.getElementById('addMoTa').value.trim();
 
             if (!tenDangNhap || !matKhau || !hoTen || !vaiTro) {
-                alert('⚠️ Vui lòng điền đầy đủ thông tin bắt buộc!');
+                document.getElementById('addModalAlert').innerHTML = 
+                    '<div class="alert alert-error">⚠️ Vui lòng điền đầy đủ thông tin bắt buộc!</div>';
                 return;
             }
 
             if (matKhau.length < 6) {
-                alert('⚠️ Mật khẩu phải có ít nhất 6 ký tự!');
+                document.getElementById('addModalAlert').innerHTML = 
+                    '<div class="alert alert-error">⚠️ Mật khẩu phải có ít nhất 6 ký tự!</div>';
                 return;
             }
 
-            // TODO: Gọi API POST /QuanTri/Register
-            console.log('Thêm quản trị viên:', { tenDangNhap, matKhau, hoTen, vaiTro, moTa });
-            alert('⚠️ Chức năng sẽ được kết nối API sau!');
+            try {
+                showLoading();
+                const response = await fetch(`${API_BASE_URL}/QuanTri/Register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        TenDangNhap: tenDangNhap,
+                        MatKhau: matKhau,
+                        HoTen: hoTen,
+                        VaiTro: vaiTro,
+                        MoTa: moTa
+                    })
+                });
+                const result = await response.json();
+                hideLoading();
+                if (response.ok) {
+                    document.getElementById('addModalAlert').innerHTML = 
+                        '<div class="alert alert-success">✅ ' + result.message + '</div>';
+                    setTimeout(() => {
+                        closeModal('addModal');
+                        loadData();
+                    }, 1500);
+                } else {
+                    document.getElementById('addModalAlert').innerHTML = 
+                        '<div class="alert alert-error">❌ ' + result.error + '</div>';
+                }
+            } catch (error) {
+                hideLoading();
+                document.getElementById('addModalAlert').innerHTML = 
+                    '<div class="alert alert-error">❌ Lỗi kết nối: ' + error.message + '</div>';
+            }
         }
 
-        function updateAdmin() {
+        async function updateAdmin() {
             const id = parseInt(document.getElementById('editId').value);
-            const hoTen = document.getElementById('editHoTen').value;
+            const hoTen = document.getElementById('editHoTen').value.trim();
             const vaiTro = document.getElementById('editVaiTro').value;
-            const moTa = document.getElementById('editMoTa').value;
+            const moTa = document.getElementById('editMoTa').value.trim();
 
             if (!hoTen || !vaiTro) {
-                alert('⚠️ Vui lòng điền đầy đủ thông tin bắt buộc!');
+                document.getElementById('editModalAlert').innerHTML = 
+                    '<div class="alert alert-error">⚠️ Vui lòng điền đầy đủ thông tin bắt buộc!</div>';
                 return;
             }
 
-            // TODO: Gọi API PUT /QuanTri/Update/{id}
-            console.log('Cập nhật quản trị viên:', { id, hoTen, vaiTro, moTa });
-            alert('⚠️ Chức năng sẽ được kết nối API sau!');
+            try {
+                showLoading();
+                const response = await fetch(`${API_BASE_URL}/QuanTri/Update/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        HoTen: hoTen,
+                        VaiTro: vaiTro,
+                        MoTa: moTa
+                    })
+                });
+                const result = await response.json();
+                hideLoading();
+                if (response.ok) {
+                    document.getElementById('editModalAlert').innerHTML = 
+                        '<div class="alert alert-success">✅ ' + result.message + '</div>';
+                    setTimeout(() => {
+                        closeModal('editModal');
+                        loadData();
+                    }, 1500);
+                } else {
+                    document.getElementById('editModalAlert').innerHTML = 
+                        '<div class="alert alert-error">❌ ' + result.error + '</div>';
+                }
+            } catch (error) {
+                hideLoading();
+                document.getElementById('editModalAlert').innerHTML = 
+                    '<div class="alert alert-error">❌ Lỗi kết nối: ' + error.message + '</div>';
+            }
         }
 
-        function changePassword() {
+        async function changePassword() {
             const id = parseInt(document.getElementById('changePasswordId').value);
             const matKhauCu = document.getElementById('matKhauCu').value;
             const matKhauMoi = document.getElementById('matKhauMoi').value;
             const xacNhanMatKhau = document.getElementById('xacNhanMatKhau').value;
 
             if (!matKhauCu || !matKhauMoi || !xacNhanMatKhau) {
-                alert('⚠️ Vui lòng điền đầy đủ thông tin!');
+                document.getElementById('changePasswordModalAlert').innerHTML = 
+                    '<div class="alert alert-error">⚠️ Vui lòng điền đầy đủ thông tin!</div>';
                 return;
             }
 
             if (matKhauMoi.length < 6) {
-                alert('⚠️ Mật khẩu mới phải có ít nhất 6 ký tự!');
+                document.getElementById('changePasswordModalAlert').innerHTML = 
+                    '<div class="alert alert-error">⚠️ Mật khẩu mới phải có ít nhất 6 ký tự!</div>';
                 return;
             }
 
             if (matKhauMoi !== xacNhanMatKhau) {
-                alert('⚠️ Mật khẩu mới và xác nhận mật khẩu không khớp!');
+                document.getElementById('changePasswordModalAlert').innerHTML = 
+                    '<div class="alert alert-error">⚠️ Mật khẩu mới và xác nhận mật khẩu không khớp!</div>';
                 return;
             }
 
-            // TODO: Gọi API PUT /QuanTri/ChangePassword/{id}
-            console.log('Đổi mật khẩu:', { id, matKhauCu, matKhauMoi });
-            alert('⚠️ Chức năng sẽ được kết nối API sau!');
-        }
-
-        function deleteAdmin(id) {
-            if (confirm('⚠️ Bạn có chắc chắn muốn xóa quản trị viên này?')) {
-                // TODO: Gọi API DELETE /QuanTri/Delete/{id}
-                console.log('Xóa quản trị viên:', id);
-                alert('⚠️ Chức năng sẽ được kết nối API sau!');
+            try {
+                showLoading();
+                const response = await fetch(`${API_BASE_URL}/QuanTri/ChangePassword/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        MatKhauCu: matKhauCu,
+                        MatKhauMoi: matKhauMoi
+                    })
+                });
+                const result = await response.json();
+                hideLoading();
+                if (response.ok) {
+                    document.getElementById('changePasswordModalAlert').innerHTML = 
+                        '<div class="alert alert-success">✅ ' + result.message + '</div>';
+                    setTimeout(() => {
+                        closeModal('changePasswordModal');
+                        loadData();
+                    }, 1500);
+                } else {
+                    document.getElementById('changePasswordModalAlert').innerHTML = 
+                        '<div class="alert alert-error">❌ ' + result.error + '</div>';
+                }
+            } catch (error) {
+                hideLoading();
+                document.getElementById('changePasswordModalAlert').innerHTML = 
+                    '<div class="alert alert-error">❌ Lỗi kết nối: ' + error.message + '</div>';
             }
         }
 
-        function refreshData() {
-            // TODO: Gọi API GET /QuanTri/GetAll
-            console.log('Làm mới dữ liệu');
-            alert('⚠️ Chức năng sẽ được kết nối API sau!');
+        async function deleteAdmin(id) {
+            if (!confirm('⚠️ Bạn có chắc chắn muốn xóa quản trị viên này?')) {
+                return;
+            }
+
+            try {
+                showLoading();
+                const response = await fetch(`${API_BASE_URL}/QuanTri/Delete/${id}`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+                hideLoading();
+                if (response.ok) {
+                    showNotification('✅ ' + result.message, 'success');
+                    loadData();
+                } else {
+                    showNotification('❌ ' + result.error, 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                showNotification('❌ Lỗi kết nối: ' + error.message, 'error');
+            }
         }
 
-        function loadData() {
-            // TODO: Gọi API GET /QuanTri/GetAll để load dữ liệu ban đầu
-            console.log('Load dữ liệu ban đầu');
-            displayData([]); // Hiển thị trống
+        async function refreshData() {
+            loadData();
         }
+
+        async function loadData() {
+            try {
+                showLoading();
+                const response = await fetch(`${API_BASE_URL}/QuanTri/GetAll`);
+                const data = await response.json();
+                hideLoading();
+                if (response.ok) {
+                    adminData = data;
+                    displayData();
+                } else {
+                    showNotification(`Lỗi: ${data.error}`, 'error');
+                    displayData([]);
+                }
+            } catch (error) {
+                hideLoading();
+                showNotification(`Lỗi kết nối: ${error.message}`, 'error');
+                displayData([]);
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modals = ['addModal', 'editModal', 'changePasswordModal'];
+            modals.forEach(modalId => {
+                const modal = document.getElementById(modalId);
+                if (event.target === modal) {
+                    closeModal(modalId);
+                }
+            });
+        };
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+        });
+    </script>
+</body>
+</html>

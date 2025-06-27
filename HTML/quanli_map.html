@@ -21,6 +21,12 @@
         <div class="controls">
             <div class="form-row">
                 <div class="form-group">
+                    <label>Lọc theo giải đấu:</label>
+                    <select id="filterGiai">
+                        <option value="">Tất cả giải đấu</option>
+                    </select>
+                </div>
+                <div class="form-group">
                     <label>Lọc theo trận đấu:</label>
                     <select id="filterTran">
                         <option value="">Tất cả trận đấu</option>
@@ -33,20 +39,17 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>&nbsp;</label>
+                    <label> </label>
                     <button class="btn btn-success" onclick="openAddModal()">➕ Thêm Chi Tiết Map</button>
                 </div>
             </div>
         </div>
-    </div>
-
         <div class="statistics" id="statisticsSection" style="display: none;">
             <h3>📊 Thống Kê Map</h3>
             <div class="stat-grid" id="statisticsGrid">
                 <!-- Statistics will be loaded here -->
             </div>
         </div>
-
         <div class="data-table">
             <div id="loading" class="loading">
                 <p>⏳ Đang tải dữ liệu...</p>
@@ -80,10 +83,16 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="modalTitle">Thêm Chi Tiết Map</h2>
-                <span class="close" onclick="closeModal()">&times;</span>
+                <span class="close" onclick="closeModal()">×</span>
             </div>
             <div id="modalAlert"></div>
             <form id="chiTietMapForm">
+                <div class="form-group">
+                    <label for="idGiai">Giải Đấu: *</label>
+                    <select id="idGiai" required>
+                        <option value="">Chọn giải đấu</option>
+                    </select>
+                </div>
                 <div class="form-group">
                     <label for="idTran">Trận Đấu: *</label>
                     <select id="idTran" required>
@@ -129,7 +138,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2>Cập Nhật Điểm Số</h2>
-                <span class="close" onclick="closeScoreModal()">&times;</span>
+                <span class="close" onclick="closeScoreModal()">×</span>
             </div>
             <div id="scoreModalAlert"></div>
             <form id="scoreForm">
@@ -156,22 +165,69 @@
         let currentData = [];
         let allTranDau = [];
         let allMaps = [];
+        let giaiDauData = [];
         let editingId = null;
         let currentScoreId = null;
 
         // Load dữ liệu ban đầu
-        window.onload = function() {
-            loadAllData();
-            loadTranDau();
-            loadMaps();
+        window.onload = async function() {
+            await loadGiaiDau();
+            await loadTranDau();
+            await loadMaps();
+            await loadAllData();
         };
+
+        async function loadGiaiDau() {
+            try {
+                const response = await fetch(`${API_BASE}/GiaiDau/GetAll`);
+                const data = await response.json();
+                if (response.ok) {
+                    giaiDauData = data;
+                    populateGiaiDauSelects();
+                } else {
+                    showError('Lỗi tải danh sách giải đấu: ' + data.error);
+                }
+            } catch (error) {
+                showError('Lỗi kết nối khi tải giải đấu: ' + error.message);
+            }
+        }
+
+        async function loadTranDau(giaiId = null) {
+            try {
+                const url = giaiId ? `${API_BASE}/TranDau/GetByGiai/${giaiId}` : `${API_BASE}/TranDau/GetAll`;
+                const response = await fetch(url);
+                const data = await response.json();
+                if (response.ok) {
+                    allTranDau = data;
+                    populateTranDauSelects();
+                } else {
+                    showError('Lỗi tải danh sách trận đấu: ' + data.error);
+                }
+            } catch (error) {
+                showError('Lỗi kết nối khi tải trận đấu: ' + error.message);
+            }
+        }
+
+        async function loadMaps() {
+            try {
+                const response = await fetch(`${API_BASE}/Map/GetAll`);
+                const data = await response.json();
+                if (response.ok) {
+                    allMaps = data;
+                    populateMapSelects();
+                } else {
+                    showError('Lỗi tải danh sách map: ' + data.error);
+                }
+            } catch (error) {
+                showError('Lỗi kết nối khi tải map: ' + error.message);
+            }
+        }
 
         async function loadAllData() {
             try {
                 showLoading();
                 const response = await fetch(`${API_BASE}/ChiTietMap/GetAll`);
                 const data = await response.json();
-                
                 if (response.ok) {
                     currentData = data;
                     displayData(data);
@@ -183,44 +239,31 @@
             }
         }
 
-        async function loadTranDau() {
-            try {
-                const response = await fetch(`${API_BASE}/TranDau/GetAll`);
-                const data = await response.json();
-                
-                if (response.ok) {
-                    allTranDau = data;
-                    populateTranDauSelects();
-                }
-            } catch (error) {
-                console.error('Lỗi tải trận đấu:', error);
-            }
-        }
-
-        async function loadMaps() {
-            try {
-                const response = await fetch(`${API_BASE}/Map/GetAll`);
-                const data = await response.json();
-                
-                if (response.ok) {
-                    allMaps = data;
-                    populateMapSelects();
-                }
-            } catch (error) {
-                console.error('Lỗi tải maps:', error);
-            }
+        function populateGiaiDauSelects() {
+            const select = document.getElementById('filterGiai');
+            select.innerHTML = '<option value="">Tất cả giải đấu</option>';
+            giaiDauData.forEach(giai => {
+                const option = document.createElement('option');
+                option.value = giai.IdGiai;
+                option.textContent = giai.TenGiai;
+                select.appendChild(option);
+            });
+            // Cập nhật idGiai trong modal
+            const idGiaiSelect = document.getElementById('idGiai');
+            idGiaiSelect.innerHTML = '<option value="">Chọn giải đấu</option>';
+            giaiDauData.forEach(giai => {
+                const option = document.createElement('option');
+                option.value = giai.IdGiai;
+                option.textContent = giai.TenGiai;
+                idGiaiSelect.appendChild(option);
+            });
         }
 
         function populateTranDauSelects() {
             const selects = ['filterTran', 'idTran'];
             selects.forEach(selectId => {
                 const select = document.getElementById(selectId);
-                if (selectId === 'filterTran') {
-                    select.innerHTML = '<option value="">Tất cả trận đấu</option>';
-                } else {
-                    select.innerHTML = '<option value="">Chọn trận đấu</option>';
-                }
-                
+                select.innerHTML = selectId === 'filterTran' ? '<option value="">Tất cả trận đấu</option>' : '<option value="">Chọn trận đấu</option>';
                 allTranDau.forEach(tran => {
                     const option = document.createElement('option');
                     option.value = tran.IdTran;
@@ -234,12 +277,7 @@
             const selects = ['filterMap', 'idMap'];
             selects.forEach(selectId => {
                 const select = document.getElementById(selectId);
-                if (selectId === 'filterMap') {
-                    select.innerHTML = '<option value="">Tất cả map</option>';
-                } else {
-                    select.innerHTML = '<option value="">Chọn map</option>';
-                }
-                
+                select.innerHTML = selectId === 'filterMap' ? '<option value="">Tất cả map</option>' : '<option value="">Chọn map</option>';
                 allMaps.forEach(map => {
                     const option = document.createElement('option');
                     option.value = map.IdMap;
@@ -256,7 +294,6 @@
             const tbody = document.getElementById('tableBody');
 
             loading.style.display = 'none';
-            
             if (data.length === 0) {
                 noData.style.display = 'block';
                 table.style.display = 'none';
@@ -265,7 +302,6 @@
 
             noData.style.display = 'none';
             table.style.display = 'table';
-            
             tbody.innerHTML = '';
             data.forEach(item => {
                 const row = document.createElement('tr');
@@ -302,26 +338,34 @@
         }
 
         // Lọc dữ liệu
+        document.getElementById('filterGiai').addEventListener('change', function() {
+            const giaiId = this.value;
+            loadTranDau(giaiId);
+            filterData();
+        });
+
         document.getElementById('filterTran').addEventListener('change', filterData);
         document.getElementById('filterMap').addEventListener('change', filterData);
 
         function filterData() {
             const tranFilter = document.getElementById('filterTran').value;
             const mapFilter = document.getElementById('filterMap').value;
-            
+            const giaiFilter = document.getElementById('filterGiai').value;
+
             let filteredData = currentData;
-            
+
+            if (giaiFilter) {
+                filteredData = filteredData.filter(item => item.IdGiai === parseInt(giaiFilter));
+            }
             if (tranFilter) {
-                filteredData = filteredData.filter(item => item.IdTran == tranFilter);
+                filteredData = filteredData.filter(item => item.IdTran === parseInt(tranFilter));
             }
-            
             if (mapFilter) {
-                filteredData = filteredData.filter(item => item.IdMap == mapFilter);
+                filteredData = filteredData.filter(item => item.IdMap === parseInt(mapFilter));
             }
-            
+
             displayData(filteredData);
-            
-            // Load statistics if map filter is selected
+
             if (mapFilter) {
                 loadMapStatistics(mapFilter);
             } else {
@@ -333,13 +377,14 @@
             try {
                 const response = await fetch(`${API_BASE}/Map/GetStatistics/${mapId}`);
                 const data = await response.json();
-                
                 if (response.ok) {
                     displayStatistics(data);
                     document.getElementById('statisticsSection').style.display = 'block';
+                } else {
+                    showError('Lỗi tải thống kê: ' + data.error);
                 }
             } catch (error) {
-                console.error('Lỗi tải thống kê:', error);
+                showError('Lỗi kết nối khi tải thống kê: ' + error.message);
             }
         }
 
@@ -366,11 +411,14 @@
         }
 
         // Modal functions
-        function openAddModal() {
+        async function openAddModal() {
             editingId = null;
             document.getElementById('modalTitle').textContent = 'Thêm Chi Tiết Map';
             document.getElementById('chiTietMapForm').reset();
             document.getElementById('modalAlert').innerHTML = '';
+            await loadGiaiDau();
+            await loadTranDau(); // Load all matches initially
+            await populateMapSelects();
             document.getElementById('formModal').style.display = 'block';
         }
 
@@ -378,28 +426,25 @@
             try {
                 const response = await fetch(`${API_BASE}/ChiTietMap/GetById/${id}`);
                 const data = await response.json();
-                
                 if (response.ok) {
                     editingId = id;
                     document.getElementById('modalTitle').textContent = 'Sửa Chi Tiết Map';
+                    document.getElementById('idGiai').value = data.IdGiai || '';
+                    await loadTranDau(data.IdGiai); // Load matches for this tournament
                     document.getElementById('idTran').value = data.IdTran;
                     document.getElementById('idMap').value = data.IdMap;
                     document.getElementById('thuTuMap').value = data.ThuTuMap;
                     document.getElementById('scoreTeam1').value = data.ScoreTeam1;
                     document.getElementById('scoreTeam2').value = data.ScoreTeam2;
-                    document.getElementById('teamThang').value = data.TeamThang || '';
-                    
-                    // Update team options when match is selected
                     await updateTeamOptions(data.IdTran);
                     document.getElementById('teamThang').value = data.TeamThang || '';
-                    
                     document.getElementById('modalAlert').innerHTML = '';
                     document.getElementById('formModal').style.display = 'block';
                 } else {
-                    alert('Lỗi: ' + data.error);
+                    showError('Lỗi: ' + data.error);
                 }
             } catch (error) {
-                alert('Lỗi kết nối: ' + error.message);
+                showError('Lỗi kết nối: ' + error.message);
             }
         }
 
@@ -420,6 +465,11 @@
         }
 
         // Update team options when match is selected
+        document.getElementById('idGiai').addEventListener('change', function() {
+            const giaiId = this.value;
+            loadTranDau(giaiId);
+        });
+
         document.getElementById('idTran').addEventListener('change', function() {
             updateTeamOptions(this.value);
         });
@@ -427,7 +477,6 @@
         async function updateTeamOptions(tranId) {
             const teamSelect = document.getElementById('teamThang');
             teamSelect.innerHTML = '<option value="">Chưa xác định</option>';
-            
             if (tranId) {
                 const tran = allTranDau.find(t => t.IdTran == tranId);
                 if (tran) {
@@ -435,7 +484,6 @@
                     option1.value = tran.Team1;
                     option1.textContent = tran.TenTeam1;
                     teamSelect.appendChild(option1);
-                    
                     const option2 = document.createElement('option');
                     option2.value = tran.Team2;
                     option2.textContent = tran.TenTeam2;
@@ -447,8 +495,8 @@
         // Form submissions
         document.getElementById('chiTietMapForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
             const formData = {
+                IdGiai: parseInt(document.getElementById('idGiai').value),
                 IdTran: parseInt(document.getElementById('idTran').value),
                 IdMap: parseInt(document.getElementById('idMap').value),
                 ThuTuMap: parseInt(document.getElementById('thuTuMap').value),
@@ -456,7 +504,7 @@
                 ScoreTeam2: parseInt(document.getElementById('scoreTeam2').value) || 0,
                 TeamThang: document.getElementById('teamThang').value || null
             };
-            
+
             try {
                 let url, method;
                 if (editingId) {
@@ -466,17 +514,12 @@
                     url = `${API_BASE}/ChiTietMap/Create`;
                     method = 'POST';
                 }
-                
                 const response = await fetch(url, {
                     method: method,
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(formData)
                 });
-                
                 const result = await response.json();
-                
                 if (response.ok) {
                     document.getElementById('modalAlert').innerHTML = 
                         '<div class="alert alert-success">✅ ' + result.message + '</div>';
@@ -496,23 +539,17 @@
 
         document.getElementById('scoreForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
             const formData = {
                 ScoreTeam1: parseInt(document.getElementById('updateScoreTeam1').value) || 0,
                 ScoreTeam2: parseInt(document.getElementById('updateScoreTeam2').value) || 0
             };
-            
             try {
                 const response = await fetch(`${API_BASE}/ChiTietMap/UpdateScore/${currentScoreId}`, {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(formData)
                 });
-                
                 const result = await response.json();
-                
                 if (response.ok) {
                     document.getElementById('scoreModalAlert').innerHTML = 
                         '<div class="alert alert-success">✅ ' + result.message + '</div>';
@@ -534,14 +571,11 @@
             if (!confirm('Bạn có chắc chắn muốn xóa chi tiết map này?')) {
                 return;
             }
-            
             try {
                 const response = await fetch(`${API_BASE}/ChiTietMap/Delete/${id}`, {
                     method: 'DELETE'
                 });
-                
                 const result = await response.json();
-                
                 if (response.ok) {
                     alert('✅ ' + result.message);
                     loadAllData();

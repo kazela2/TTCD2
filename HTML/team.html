@@ -135,10 +135,6 @@
                         <span class="info-value">${team.NgayDangKy ? new Date(team.NgayDangKy).toLocaleDateString('vi-VN') : 'Chưa có'}</span>
                     </div>
                 </div>
-                <div class="card-actions">
-                    <button class="btn btn-edit" onclick="editTeam(${team.IdTeam})">Sửa</button>
-                    <button class="btn btn-delete" onclick="deleteTeam(${team.IdTeam})">Xóa</button>
-                </div>
             `;
 
             return card;

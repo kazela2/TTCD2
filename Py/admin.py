@@ -645,9 +645,230 @@ def get_teams_by_giai(id_giai):
         return jsonify(result)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-    
-    # Thêm các routes cho TranDau vào cuối file Python hiện tại của bạn, trước phần "# === CHẠY APP ==="
 
+
+# ===== PLAYER ROUTES =====
+
+@app.route('/Player/GetAll', methods=['GET'])
+def get_all_players():
+    try:
+        cursor = con.cursor()
+        cursor.execute("""
+            SELECT p.IdPlayer, p.GameName, p.TagLine, p.HoTenThat, p.ViTri, 
+                   p.RankHienTai, p.MainAgent, p.IdTeam, t.TenTeam
+            FROM Player p
+            LEFT JOIN Team t ON p.IdTeam = t.IdTeam
+            ORDER BY p.IdPlayer DESC
+        """)
+        rows = cursor.fetchall()
+
+        result = []
+        for row in rows:
+            result.append({
+                "IdPlayer": row.IdPlayer,
+                "GameName": row.GameName,
+                "TagLine": row.TagLine if row.TagLine else "",
+                "HoTenThat": row.HoTenThat if row.HoTenThat else "",
+                "ViTri": row.ViTri if row.ViTri else "",
+                "RankHienTai": row.RankHienTai if row.RankHienTai else "",
+                "MainAgent": row.MainAgent if row.MainAgent else "",
+                "IdTeam": row.IdTeam if row.IdTeam else None,
+                "TenTeam": row.TenTeam if row.TenTeam else ""
+            })
+
+        cursor.close()
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/Player/GetById/<int:id_player>', methods=['GET'])
+def get_player_by_id(id_player):
+    try:
+        cursor = con.cursor()
+        cursor.execute("""
+            SELECT p.IdPlayer, p.GameName, p.TagLine, p.HoTenThat, p.ViTri, 
+                   p.RankHienTai, p.MainAgent, p.IdTeam, t.TenTeam
+            FROM Player p
+            LEFT JOIN Team t ON p.IdTeam = t.IdTeam
+            WHERE p.IdPlayer = ?
+        """, (id_player,))
+        
+        row = cursor.fetchone()
+        cursor.close()
+
+        if not row:
+            return jsonify({'error': 'Thành viên không tồn tại'}), 404
+
+        result = {
+            "IdPlayer": row.IdPlayer,
+            "GameName": row.GameName,
+            "TagLine": row.TagLine if row.TagLine else "",
+            "HoTenThat": row.HoTenThat if row.HoTenThat else "",
+            "ViTri": row.ViTri if row.ViTri else "",
+            "RankHienTai": row.RankHienTai if row.RankHienTai else "",
+            "MainAgent": row.MainAgent if row.MainAgent else "",
+            "IdTeam": row.IdTeam if row.IdTeam else None,
+            "TenTeam": row.TenTeam if row.TenTeam else ""
+        }
+
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/Player/Create', methods=['POST'])
+def create_player():
+    try:
+        data = request.json
+        game_name = data.get('GameName')
+        tag_line = data.get('TagLine', '')
+        ho_ten_that = data.get('HoTenThat', '')
+        vi_tri = data.get('ViTri', '')
+        rank_hien_tai = data.get('RankHienTai', '')
+        main_agent = data.get('MainAgent', '')
+        id_team = data.get('IdTeam')
+
+        if not game_name:
+            return jsonify({'error': 'Tên game là bắt buộc'}), 400
+
+        cursor = con.cursor()
+        
+        # Kiểm tra tên game đã tồn tại
+        cursor.execute("SELECT COUNT(*) FROM Player WHERE GameName = ?", (game_name,))
+        count = cursor.fetchone()[0]
+        if count > 0:
+            cursor.close()
+            return jsonify({'error': 'Tên game đã tồn tại'}), 400
+
+        # Kiểm tra đội có tồn tại không (nếu có IdTeam)
+        if id_team:
+            cursor.execute("SELECT COUNT(*) FROM Team WHERE IdTeam = ?", (id_team,))
+            count = cursor.fetchone()[0]
+            if count == 0:
+                cursor.close()
+                return jsonify({'error': 'Đội không tồn tại'}), 400
+
+        # Thêm thành viên mới
+        query = """
+            INSERT INTO Player (GameName, TagLine, HoTenThat, ViTri, RankHienTai, MainAgent, IdTeam)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """
+        cursor.execute(query, (game_name, tag_line, ho_ten_that, vi_tri, rank_hien_tai, main_agent, id_team))
+        con.commit()
+        cursor.close()
+
+        return jsonify({'message': 'Tạo thành viên thành công'}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/Player/Update/<int:id_player>', methods=['PUT'])
+def update_player(id_player):
+    try:
+        data = request.json
+        game_name = data.get('GameName')
+        tag_line = data.get('TagLine', '')
+        ho_ten_that = data.get('HoTenThat', '')
+        vi_tri = data.get('ViTri', '')
+        rank_hien_tai = data.get('RankHienTai', '')
+        main_agent = data.get('MainAgent', '')
+        id_team = data.get('IdTeam')
+
+        if not game_name:
+            return jsonify({'error': 'Tên game là bắt buộc'}), 400
+
+        cursor = con.cursor()
+        
+        # Kiểm tra thành viên có tồn tại không
+        cursor.execute("SELECT COUNT(*) FROM Player WHERE IdPlayer = ?", (id_player,))
+        count = cursor.fetchone()[0]
+        if count == 0:
+            cursor.close()
+            return jsonify({'error': 'Thành viên không tồn tại'}), 404
+
+        # Kiểm tra tên game đã tồn tại (trừ chính nó)
+        cursor.execute("SELECT COUNT(*) FROM Player WHERE GameName = ? AND IdPlayer != ?", 
+                      (game_name, id_player))
+        count = cursor.fetchone()[0]
+        if count > 0:
+            cursor.close()
+            return jsonify({'error': 'Tên game đã tồn tại'}), 400
+
+        # Kiểm tra đội có tồn tại không (nếu có IdTeam)
+        if id_team:
+            cursor.execute("SELECT COUNT(*) FROM Team WHERE IdTeam = ?", (id_team,))
+            count = cursor.fetchone()[0]
+            if count == 0:
+                cursor.close()
+                return jsonify({'error': 'Đội không tồn tại'}), 400
+
+        # Cập nhật thông tin
+        query = """
+            UPDATE Player 
+            SET GameName = ?, TagLine = ?, HoTenThat = ?, ViTri = ?, 
+                RankHienTai = ?, MainAgent = ?, IdTeam = ?
+            WHERE IdPlayer = ?
+        """
+        cursor.execute(query, (game_name, tag_line, ho_ten_that, vi_tri, rank_hien_tai, main_agent, id_team, id_player))
+        con.commit()
+        cursor.close()
+        
+        return jsonify({'message': 'Cập nhật thành viên thành công'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/Player/Delete/<int:id_player>', methods=['DELETE'])
+def delete_player(id_player):
+    try:
+        cursor = con.cursor()
+        
+        # Kiểm tra thành viên có tồn tại không
+        cursor.execute("SELECT COUNT(*) FROM Player WHERE IdPlayer = ?", (id_player,))
+        count = cursor.fetchone()[0]
+        if count == 0:
+            cursor.close()
+            return jsonify({'error': 'Thành viên không tồn tại'}), 404
+
+        # Xóa thành viên
+        cursor.execute("DELETE FROM Player WHERE IdPlayer = ?", (id_player,))
+        con.commit()
+        cursor.close()
+        
+        return jsonify({'message': 'Xóa thành viên thành công'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/Player/GetByTeam/<int:id_team>', methods=['GET'])
+def get_players_by_team(id_team):
+    try:
+        cursor = con.cursor()
+        cursor.execute("""
+            SELECT p.IdPlayer, p.GameName, p.TagLine, p.HoTenThat, p.ViTri, 
+                   p.RankHienTai, p.MainAgent, p.IdTeam, t.TenTeam
+            FROM Player p
+            LEFT JOIN Team t ON p.IdTeam = t.IdTeam
+            WHERE p.IdTeam = ?
+            ORDER BY p.IdPlayer DESC
+        """, (id_team,))
+        rows = cursor.fetchall()
+
+        result = []
+        for row in rows:
+            result.append({
+                "IdPlayer": row.IdPlayer,
+                "GameName": row.GameName,
+                "TagLine": row.TagLine if row.TagLine else "",
+                "HoTenThat": row.HoTenThat if row.HoTenThat else "",
+                "ViTri": row.ViTri if row.ViTri else "",
+                "RankHienTai": row.RankHienTai if row.RankHienTai else "",
+                "MainAgent": row.MainAgent if row.MainAgent else "",
+                "IdTeam": row.IdTeam if row.IdTeam else None,
+                "TenTeam": row.TenTeam if row.TenTeam else ""
+            })
+
+        cursor.close()
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
 # ===== TRAN DAU ROUTES =====
 
 @app.route('/TranDau/GetAll', methods=['GET'])
