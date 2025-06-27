@@ -96,7 +96,7 @@
                         <select class="form-control" id="addVaiTro" required>
                             <option value="">-- Chọn vai trò --</option>
                             <option value="Admin">Admin</option>
-                            <option value="Moderator">Moderator</option>
+                            <option value="Viewer">Viewer</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -135,7 +135,7 @@
                         <label for="editVaiTro">Vai Trò *</label>
                         <select class="form-control" id="editVaiTro" required>
                             <option value="Admin">Admin</option>
-                            <option value="Moderator">Moderator</option>
+                            <option value="Viewer">Viewer</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -237,7 +237,7 @@
 
             tableBody.innerHTML = '';
             data.forEach(admin => {
-                const badgeClass = admin.VaiTro === 'Admin' ? 'badge-admin' : 'badge-moderator';
+                const badgeClass = admin.VaiTro === 'Admin' ? 'badge-admin' : 'badge-Viewer';
                 const row = `
                     <tr>
                         <td>${admin.IdQuanTri}</td>

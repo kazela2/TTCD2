@@ -45,15 +45,6 @@
                 </div>
                 
                 <div class="input-group">
-                    <label for="vaiTro">Vai trò <span class="required">*</span></label>
-                    <select id="vaiTro" name="vaiTro" required>
-                        <option value="">Chọn vai trò</option>
-                        <option value="Admin">Admin</option>
-                        <option value="Moderator">Viewer</option>
-                    </select>
-                </div>
-                
-                <div class="input-group">
                     <label for="moTa">Mô tả</label>
                     <textarea id="moTa" name="moTa" rows="3" placeholder="Mô tả về vai trò và trách nhiệm..."></textarea>
                 </div>
@@ -79,7 +70,7 @@
     </div>
 
     <script>
-        const API_BASE_URL = 'http://127.0.0.1:5000'; // Thay đổi URL phù hợp với server của bạn
+                const API_BASE_URL = 'http://127.0.0.1:5000';
 
         function togglePassword(inputId) {
             const passwordInput = document.getElementById(inputId);
@@ -102,7 +93,6 @@
             errorDiv.textContent = message;
             errorDiv.style.display = 'block';
             
-            // Tự động ẩn sau 5 giây
             setTimeout(() => {
                 errorDiv.style.display = 'none';
             }, 5000);
@@ -116,7 +106,6 @@
             successDiv.textContent = message;
             successDiv.style.display = 'block';
             
-            // Tự động ẩn sau 3 giây và chuyển hướng
             setTimeout(() => {
                 successDiv.style.display = 'none';
                 window.location.href = 'login.html';
@@ -162,85 +151,95 @@
             }
         }
 
-        document.getElementById('registerForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            const tenDangNhap = formData.get('tenDangNhap').trim();
-            const hoTen = formData.get('hoTen').trim();
-            const matKhau = formData.get('matKhau');
-            const confirmPassword = formData.get('confirmPassword');
-            const vaiTro = formData.get('vaiTro');
-            const moTa = formData.get('moTa').trim();
-            const terms = formData.get('terms');
-            
-            // Validate empty fields
-            if (!tenDangNhap || !hoTen || !matKhau || !vaiTro) {
-                showError('Vui lòng điền đầy đủ các trường bắt buộc!');
+        function initializeRegisterForm() {
+            const registerForm = document.getElementById('registerForm');
+            if (!registerForm) {
+                console.warn('Register form not found');
                 return;
             }
-            
-            // Validate password match
-            if (matKhau !== confirmPassword) {
-                showError('Mật khẩu xác nhận không khớp!');
-                return;
-            }
-            
-            // Validate password length
-            if (matKhau.length < 6) {
-                showError('Mật khẩu phải có ít nhất 6 ký tự!');
-                return;
-            }
-            
-            // Check terms agreement
-            if (!terms) {
-                showError('Vui lòng đồng ý với điều khoản sử dụng!');
-                return;
-            }
-            
-            // Prepare data for API
-            const apiData = {
-                TenDangNhap: tenDangNhap,
-                HoTen: hoTen,
-                MatKhau: matKhau,
-                VaiTro: vaiTro,
-                MoTa: moTa
-            };
-            
-            showLoading(true);
-            await registerAdmin(apiData);
-            showLoading(false);
-        });
 
-        // Validation on input
-        document.getElementById('tenDangNhap').addEventListener('input', function(e) {
-            const value = e.target.value;
-            if (value.length > 0 && value.length < 3) {
-                e.target.setCustomValidity('Tên đăng nhập phải có ít nhất 3 ký tự');
-            } else {
-                e.target.setCustomValidity('');
-            }
-        });
+            registerForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                const tenDangNhap = formData.get('tenDangNhap').trim();
+                const hoTen = formData.get('hoTen').trim();
+                const matKhau = formData.get('matKhau');
+                const confirmPassword = formData.get('confirmPassword');
+                const moTa = formData.get('moTa').trim();
+                const terms = formData.get('terms');
+                
+                // Validate empty fields
+                if (!tenDangNhap || !hoTen || !matKhau) {
+                    showError('Vui lòng điền đầy đủ các trường bắt buộc!');
+                    return;
+                }
+                
+                // Validate password match
+                if (matKhau !== confirmPassword) {
+                    showError('Mật khẩu xác nhận không khớp!');
+                    return;
+                }
+                
+                // Validate password length
+                if (matKhau.length < 6) {
+                    showError('Mật khẩu phải có ít nhất 6 ký tự!');
+                    return;
+                }
+                
+                // Check terms agreement
+                if (!terms) {
+                    showError('Vui lòng đồng ý với điều khoản sử dụng!');
+                    return;
+                }
+                
+                // Prepare data for API with default VaiTro: Viewer
+                const apiData = {
+                    TenDangNhap: tenDangNhap,
+                    HoTen: hoTen,
+                    MatKhau: matKhau,
+                    VaiTro: 'Viewer',
+                    MoTa: moTa
+                };
+                
+                showLoading(true);
+                await registerAdmin(apiData);
+                showLoading(false);
+            });
 
-        document.getElementById('matKhau').addEventListener('input', function(e) {
-            const value = e.target.value;
-            if (value.length > 0 && value.length < 6) {
-                e.target.setCustomValidity('Mật khẩu phải có ít nhất 6 ký tự');
-            } else {
-                e.target.setCustomValidity('');
-            }
-        });
+            // Validation on input
+            document.getElementById('tenDangNhap').addEventListener('input', function(e) {
+                const value = e.target.value;
+                if (value.length > 0 && value.length < 3) {
+                    e.target.setCustomValidity('Tên đăng nhập phải có ít nhất 3 ký tự');
+                } else {
+                    e.target.setCustomValidity('');
+                }
+            });
 
-        document.getElementById('confirmPassword').addEventListener('input', function(e) {
-            const password = document.getElementById('matKhau').value;
-            const confirmPassword = e.target.value;
-            
-            if (confirmPassword.length > 0 && password !== confirmPassword) {
-                e.target.setCustomValidity('Mật khẩu xác nhận không khớp');
-            } else {
-                e.target.setCustomValidity('');
-            }
-        });
+            document.getElementById('matKhau').addEventListener('input', function(e) {
+                const value = e.target.value;
+                if (value.length > 0 && value.length < 6) {
+                    e.target.setCustomValidity('Mật khẩu phải có ít nhất 6 ký tự');
+                } else {
+                    e.target.setCustomValidity('');
+                }
+            });
+
+            document.getElementById('confirmPassword').addEventListener('input', function(e) {
+                const password = document.getElementById('matKhau').value;
+                const confirmPassword = e.target.value;
+                
+                if (confirmPassword.length > 0 && password !== confirmPassword) {
+                    e.target.setCustomValidity('Mật khẩu xác nhận không khớp');
+                } else {
+                    e.target.setCustomValidity('');
+                }
+            });
+        }
+
+        // Initialize when page loads
+        window.addEventListener('load', initializeRegisterForm);
     </script>
 </body>
 </html>

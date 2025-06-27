@@ -287,22 +287,32 @@ def get_all_giai_dau():
             ORDER BY NgayBatDau DESC
         """)
         rows = cursor.fetchall()
+        cursor.close()
 
         result = []
         for row in rows:
+            ngay_bat_dau = row.NgayBatDau
+            ngay_ket_thuc = row.NgayKetThuc
+            if isinstance(ngay_bat_dau, datetime):
+                ngay_bat_dau = ngay_bat_dau.strftime('%Y-%m-%d')
+            if isinstance(ngay_ket_thuc, datetime):
+                ngay_ket_thuc = ngay_ket_thuc.strftime('%Y-%m-%d')
             result.append({
                 "IdGiai": row.IdGiai,
-                "TenGiai": row.TenGiai,
-                "NgayBatDau": row.NgayBatDau.strftime('%Y-%m-%d') if row.NgayBatDau else None,
-                "NgayKetThuc": row.NgayKetThuc.strftime('%Y-%m-%d') if row.NgayKetThuc else None,
-                "SoTeamThamGia": row.SoTeamThamGia if row.SoTeamThamGia else 0,
-                "GiaiThuong": float(row.GiaiThuong) if row.GiaiThuong else 0,
-                "HinhAnh": row.HinhAnh if row.HinhAnh else "",
-                "MoTa": row.MoTa if row.MoTa else ""
+                "TenGiai": row.TenGiai or "",
+                "NgayBatDau": ngay_bat_dau,
+                "NgayKetThuc": ngay_ket_thuc,
+                "SoTeamThamGia": row.SoTeamThamGia or 0,
+                "GiaiThuong": float(row.GiaiThuong) if row.GiaiThuong is not None else 0,
+                "HinhAnh": row.HinhAnh or "",
+                "MoTa": row.MoTa or ""
             })
-
-        return jsonify(result)
+        return jsonify(result), 200
+    except pyodbc.Error as e:
+        print(f"Database error in /GiaiDau/GetAll: {str(e)}")
+        return jsonify({'error': f"Database error: {str(e)}"}), 500
     except Exception as e:
+        print(f"Error in /GiaiDau/GetAll: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/GiaiDau/GetById/<int:id_giai>', methods=['GET'])
@@ -1328,6 +1338,7 @@ def get_all_bang_xep_hang():
             ORDER BY bxh.IdGiai, bxh.Diem DESC, bxh.HangHienTai
         """)
         rows = cursor.fetchall()
+        cursor.close()
 
         result = []
         for row in rows:
@@ -1344,11 +1355,14 @@ def get_all_bang_xep_hang():
                 "MapThua": row.MapThua if row.MapThua else 0,
                 "Diem": row.Diem if row.Diem else 0,
                 "HangHienTai": row.HangHienTai if row.HangHienTai else 0,
-                "TiLe": f"{row.MapThang}/{row.MapThua}" if row.MapThang and row.MapThua else "0/0"
+                "TiLe": f"{row.MapThang}/{row.MapThua}" if row.MapThang is not None and row.MapThua is not None else "0/0"
             })
-
-        return jsonify(result)
+        return jsonify(result), 200
+    except pyodbc.Error as e:
+        print(f"Database error in /BangXepHang/GetAll: {str(e)}")
+        return jsonify({'error': f"Database error: {str(e)}"}), 500
     except Exception as e:
+        print(f"Error in /BangXepHang/GetAll: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/BangXepHang/GetById/<int:id_xh>', methods=['GET'])

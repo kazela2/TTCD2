@@ -16,7 +16,7 @@
           <a href="trandau.html">Trận Đấu</a>
           <a href="xephang.html">Bảng Xếp Hạng</a>
           <a href="map.html">Map</a>
-          <a href="admin.html">Quản Lý</a>
+          <a href="admin.html" id="adminLink" style="display: none;">Quản Lý</a>
         </div>
         <div class="auth-buttons" id="authButtons">
           <!-- Sẽ được cập nhật bởi JavaScript -->
@@ -413,5 +413,37 @@
       // Kiểm tra token ngay khi trang được tải
       checkTokenExpiry();
   </script>
+  <script>
+    function updateAdminLink() {
+        const adminLink = document.getElementById('adminLink');
+        if (!adminLink) {
+            console.warn('Admin link element not found');
+            return;
+        }
+    
+        const user = localStorage.getItem('adminUser');
+        if (user) {
+            try {
+                const userData = JSON.parse(user);
+                if (userData.VaiTro === 'Admin') {
+                    adminLink.style.display = 'block';
+                } else {
+                    adminLink.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error parsing adminUser:', error);
+                adminLink.style.display = 'none';
+            }
+        } else {
+            adminLink.style.display = 'none';
+        }
+    }
+    
+    // Gọi khi trang tải
+    window.addEventListener('load', updateAdminLink);
+    
+    // Lắng nghe sự kiện tùy chỉnh 'authChanged' để cập nhật khi đăng nhập/đăng xuất
+    window.addEventListener('authChanged', updateAdminLink);
+</script>
 </body>
 </html>

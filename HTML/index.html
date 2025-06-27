@@ -10,54 +10,53 @@
     <div class="header">
         <div class="logo">🎮 VALORANT</div>
         <div class="nav">
-          <a href="index.html">Trang chủ</a>
-          <a href="giaidau.html">Giải đấu</a>
-          <a href="team.html">Team</a>
-          <a href="trandau.html">Trận Đấu</a>
-          <a href="xephang.html">Bảng Xếp Hạng</a>
-          <a href="map.html">Map</a>
-          <a href="admin.html">Quản Lý</a>
+            <a href="index.html">Trang chủ</a>
+            <a href="giaidau.html">Giải đấu</a>
+            <a href="team.html">Team</a>
+            <a href="trandau.html">Trận Đấu</a>
+            <a href="xephang.html">Bảng Xếp Hạng</a>
+            <a href="map.html">Map</a>
+            <a href="admin.html" id="adminLink" style="display: none;">Quản Lý</a>
         </div>
         <div class="auth-buttons" id="authButtons">
-          <!-- Sẽ được cập nhật bởi JavaScript -->
-          <a href="login.html" class="login-btn" id="loginBtn">Đăng nhập</a>
-          <a href="register.html" class="register-btn" id="registerBtn">Đăng ký</a>
+            <!-- Sẽ được cập nhật bởi JavaScript -->
+            <a href="login.html" class="login-btn" id="loginBtn">Đăng nhập</a>
+            <a href="register.html" class="register-btn" id="registerBtn">Đăng ký</a>
         </div>
     </div>
 
     <div class="container">
         <div class="banner">
-          <img src="/image/valorant2.webp" alt="">
-          <div class="banner-overlay"></div>
-          
-          <div class="banner-content">
-            <h1>Tổ chức giải đấu dễ dàng<br>Quản lý đội thể thao đơn giản</h1>
+            <img src="/image/valorant2.webp" alt="">
+            <div class="banner-overlay"></div>
             
-            <div class="buttons">
-              <a href="taogiaidau.html"><button class="btn green">Tạo giải đấu</button></a>
-              <a href="giaidau.html"><button class="btn black">Tìm giải đấu</button></a>
-              <a href="team.html"><button class="btn purple">Tìm Kiếm đội</button></a>
+            <div class="banner-content">
+                <h1>Theo Dõi Các Trận Đấu Kịch Tính<br>Sôi Nổi Giữa Các Tuyển Thủ ValoRant</h1>
+                
+                <div class="buttons">
+                    <a href="giaidau.html"><button class="btn black">Tìm giải đấu</button></a>
+                    <a href="team.html"><button class="btn purple">Tìm Kiếm đội</button></a>
+                </div>
+        
+                <div class="stats">
+                    <div class="stat-box">
+                        <p>Giải đấu</p>
+                        <strong>53.560</strong>
+                    </div>
+                    <div class="stat-box">
+                        <p>Đội thi đấu</p>
+                        <strong>284.646</strong>
+                    </div>
+                    <div class="stat-box">
+                        <p>Huấn Luyện Viên</p>
+                        <strong>1.471.127</strong>
+                    </div>
+                    <div class="stat-box">
+                        <p>Trận đấu</p>
+                        <strong>1.783.446</strong>
+                    </div>
+                </div>
             </div>
-      
-            <div class="stats">
-              <div class="stat-box">
-                <p>Giải đấu</p>
-                <strong>53.560</strong>
-              </div>
-              <div class="stat-box">
-                <p>Đội thi đấu</p>
-                <strong>284.646</strong>
-              </div>
-              <div class="stat-box">
-                <p>Huấn Luyện Viên</p>
-                <strong>1.471.127</strong>
-              </div>
-              <div class="stat-box">
-                <p>Trận đấu</p>
-                <strong>1.783.446</strong>
-              </div>
-            </div>
-          </div>
         </div>
     </div>
       
@@ -65,6 +64,39 @@
         <h1>Nền tảng quản lý giải đấu, đội thi đấu</h1>
     </footer>
 
+    <script>
+        function updateAdminLink() {
+            const adminLink = document.getElementById('adminLink');
+            if (!adminLink) {
+                console.warn('Admin link element not found');
+                return;
+            }
+        
+            const user = localStorage.getItem('adminUser');
+            if (user) {
+                try {
+                    const userData = JSON.parse(user);
+                    if (userData.VaiTro === 'Admin') {
+                        adminLink.style.display = 'block';
+                    } else {
+                        adminLink.style.display = 'none';
+                    }
+                } catch (error) {
+                    console.error('Error parsing adminUser:', error);
+                    adminLink.style.display = 'none';
+                }
+            } else {
+                adminLink.style.display = 'none';
+            }
+        }
+        
+        // Gọi khi trang tải
+        window.addEventListener('load', updateAdminLink);
+        
+        // Lắng nghe sự kiện tùy chỉnh 'authChanged' để cập nhật khi đăng nhập/đăng xuất
+        window.addEventListener('authChanged', updateAdminLink);
+    </script>
+    
     <script>
         // Kiểm tra trạng thái đăng nhập khi trang được tải
         window.addEventListener('load', function() {
@@ -103,6 +135,9 @@
                     <a href="register.html" class="register-btn">Đăng ký</a>
                 `;
             }
+
+            // Kích hoạt sự kiện authChanged để cập nhật liên kết Quản Lý
+            window.dispatchEvent(new Event('authChanged'));
         }
 
         function logout() {
@@ -117,9 +152,6 @@
                 
                 // Cập nhật lại giao diện
                 updateAuthButtons();
-                
-                // Có thể chuyển hướng về trang chủ hoặc trang đăng nhập
-                // window.location.href = 'login.html';
             }
         }
 
