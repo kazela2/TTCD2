@@ -2,8 +2,8 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản Lý Tài Khoản Quản Trị</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Quản lý Tài Khoản</title>
     <link rel="stylesheet" href="/CSS/quanli_taikhoan.css">
 </head>
 <body>
@@ -12,8 +12,8 @@
         <a href="quanlygiaidau.html">📦 Giải Đấu</a>
         <a href="quanly_Team_Player.html">🧾 Team & Player</a>
         <a href="quanli_trandau.html">🎮 Trận Đấu</a>
-        <a href="quanli_xephang.html" class="active">📊 Bảng Xếp Hạng</a>
-        <a href="quanli_taikhoan.html">🪪 Tài khoản</a>
+        <a href="quanli_xephang.html">📊 Bảng Xếp Hạng</a>
+        <a href="quanli_taikhoan.html" class="active">🪪 Tài khoản</a>
         <a href="quanli_map.html">🗺️ Chi Tiết Map</a>
         <a href="index.html">🏠 Quay Lại</a>
     </div>
@@ -21,31 +21,19 @@
     <div class="main-content">
         <div class="container">
             <div class="header">
-                <h1>🪪 Quản Lý Tài Khoản Quản Trị</h1>
-                <p>Quản lý thông tin tài khoản quản trị viên hệ thống</p>
+                <h1>🪪 Quản lý Tài Khoản</h1>
             </div>
-
             <div class="action-buttons">
-                <button class="btn btn-primary" onclick="openAddModal()">
-                    ➕ Thêm Quản Trị Viên
-                </button>
-                <button class="btn btn-success" onclick="refreshData()">
-                    🔄 Làm Mới
-                </button>
+                <button class="btn btn-primary" onclick="openAddModal()">➕ Thêm</button>
+                <button class="btn btn-success" onclick="loadData()">🔄 Làm Mới</button>
             </div>
-
             <div class="data-table">
                 <div class="table-header">
-                    <h3>📋 Danh Sách Quản Trị Viên</h3>
-                    <input type="text" class="search-box" placeholder="🔍 Tìm kiếm..." id="searchInput">
+                    <h3>📋 Danh Sách</h3>
+                    <input type="text" class="search-box" placeholder="🔍 Tìm" id="searchInput">
                 </div>
-                
-                <div id="loadingDiv" class="loading" style="display: none;">
-                    <div class="spinner"></div>
-                    <p>Đang tải dữ liệu...</p>
-                </div>
-
-                <table id="dataTable">
+                <div id="loading" class="loading" style="display: none;">Đang tải...</div>
+                <table id="dataTable" style="display: none;">
                     <thead>
                         <tr>
                             <th>ID</th>
@@ -56,102 +44,90 @@
                             <th>Thao Tác</th>
                         </tr>
                     </thead>
-                    <tbody id="tableBody">
-                        <!-- Dữ liệu sẽ được load từ API -->
-                    </tbody>
+                    <tbody id="tableBody"></tbody>
                 </table>
-
-                <div id="noDataDiv" class="no-data" style="display: none;">
-                    <p>📭 Không có dữ liệu để hiển thị</p>
-                </div>
+                <div id="noData" class="no-data" style="display: none;">📭 Không có dữ liệu</div>
             </div>
         </div>
     </div>
 
-    <!-- Modal Thêm Quản Trị Viên -->
     <div id="addModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h4>➕ Thêm Quản Trị Viên Mới</h4>
+                <h4>➕ Thêm Quản Trị</h4>
                 <span class="close" onclick="closeModal('addModal')">×</span>
             </div>
             <div id="addModalAlert"></div>
-            <div class="modal-body">
-                <form id="addForm">
-                    <div class="form-group">
-                        <label for="addTenDangNhap">Tên Đăng Nhập *</label>
-                        <input type="text" class="form-control" id="addTenDangNhap" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="addMatKhau">Mật Khẩu *</label>
-                        <input type="password" class="form-control" id="addMatKhau" required minlength="6">
-                        <small style="color: #666;">Tối thiểu 6 ký tự</small>
-                    </div>
-                    <div class="form-group">
-                        <label for="addHoTen">Họ Tên *</label>
-                        <input type="text" class="form-control" id="addHoTen" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="addVaiTro">Vai Trò *</label>
-                        <select class="form-control" id="addVaiTro" required>
-                            <option value="">-- Chọn vai trò --</option>
-                            <option value="Admin">Admin</option>
-                            <option value="Viewer">Viewer</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="addMoTa">Mô Tả</label>
-                        <textarea class="form-control" id="addMoTa" rows="3"></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeModal('addModal')">Hủy</button>
-                <button type="button" class="btn btn-primary" onclick="addAdmin()">Thêm</button>
-            </div>
+            <form id="addForm" class="modal-body">
+                <div class="form-group">
+                    <label>Tên Đăng Nhập *</label>
+                    <input type="text" class="form-control" id="addTenDangNhap" required>
+                </div>
+                <div class="form-group">
+                    <label>Mật Khẩu *</label>
+                    <input type="password" class="form-control" id="addMatKhau" required minlength="6">
+                    <small>Tối thiểu 6 ký tự</small>
+                </div>
+                <div class="form-group">
+                    <label>Họ Tên *</label>
+                    <input type="text" class="form-control" id="addHoTen" required>
+                </div>
+                <div class="form-group">
+                    <label>Vai Trò *</label>
+                    <select class="form-control" id="addVaiTro" required>
+                        <option value="">Chọn vai trò</option>
+                        <option value="Admin">Admin</option>
+                        <option value="Viewer">Viewer</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Mô Tả</label>
+                    <textarea class="form-control" id="addMoTa" rows="3"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('addModal')">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Thêm</button>
+                </div>
+            </form>
         </div>
     </div>
 
-    <!-- Modal Sửa Quản Trị Viên -->
     <div id="editModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h4>✏️ Sửa Thông Tin Quản Trị Viên</h4>
+                <h4>✏️ Sửa Quản Trị</h4>
                 <span class="close" onclick="closeModal('editModal')">×</span>
             </div>
             <div id="editModalAlert"></div>
-            <div class="modal-body">
-                <form id="editForm">
-                    <input type="hidden" id="editId">
-                    <div class="form-group">
-                        <label for="editTenDangNhap">Tên Đăng Nhập</label>
-                        <input type="text" class="form-control" id="editTenDangNhap" readonly style="background-color: #f8f9fa;">
-                    </div>
-                    <div class="form-group">
-                        <label for="editHoTen">Họ Tên *</label>
-                        <input type="text" class="form-control" id="editHoTen" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="editVaiTro">Vai Trò *</label>
-                        <select class="form-control" id="editVaiTro" required>
-                            <option value="Admin">Admin</option>
-                            <option value="Viewer">Viewer</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="editMoTa">Mô Tả</label>
-                        <textarea class="form-control" id="editMoTa" rows="3"></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeModal('editModal')">Hủy</button>
-                <button type="button" class="btn btn-warning" onclick="updateAdmin()">Cập Nhật</button>
-            </div>
+            <form id="editForm" class="modal-body">
+                <input type="hidden" id="editId">
+                <div class="form-group">
+                    <label>Tên Đăng Nhập</label>
+                    <input type="text" class="form-control" id="editTenDangNhap" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Họ Tên *</label>
+                    <input type="text" class="form-control" id="editHoTen" required>
+                </div>
+                <div class="form-group">
+                    <label>Vai Trò *</label>
+                    <select class="form-control" id="editVaiTro" required>
+                        <option value="Admin">Admin</option>
+                        <option value="Viewer">Viewer</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Mô Tả</label>
+                    <textarea class="form-control" id="editMoTa" rows="3"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editModal')">Hủy</button>
+                    <button type="submit" class="btn btn-warning">Cập Nhật</button>
+                </div>
+            </form>
         </div>
     </div>
 
-    <!-- Modal Đổi Mật Khẩu -->
     <div id="changePasswordModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -159,370 +135,227 @@
                 <span class="close" onclick="closeModal('changePasswordModal')">×</span>
             </div>
             <div id="changePasswordModalAlert"></div>
-            <div class="modal-body">
-                <form id="changePasswordForm">
-                    <input type="hidden" id="changePasswordId">
-                    <div class="form-group">
-                        <label for="matKhauCu">Mật Khẩu Cũ *</label>
-                        <input type="password" class="form-control" id="matKhauCu" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="matKhauMoi">Mật Khẩu Mới *</label>
-                        <input type="password" class="form-control" id="matKhauMoi" required minlength="6">
-                        <small style="color: #666;">Tối thiểu 6 ký tự</small>
-                    </div>
-                    <div class="form-group">
-                        <label for="xacNhanMatKhau">Xác Nhận Mật Khẩu Mới *</label>
-                        <input type="password" class="form-control" id="xacNhanMatKhau" required minlength="6">
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeModal('changePasswordModal')">Hủy</button>
-                <button type="button" class="btn btn-primary" onclick="changePassword()">Đổi Mật Khẩu</button>
-            </div>
+            <form id="changePasswordForm" class="modal-body">
+                <input type="hidden" id="changePasswordId">
+                <div class="form-group">
+                    <label>Mật Khẩu Cũ *</label>
+                    <input type="password" class="form-control" id="matKhauCu" required>
+                </div>
+                <div class="form-group">
+                    <label>Mật Khẩu Mới *</label>
+                    <input type="password" class="form-control" id="matKhauMoi" required minlength="6">
+                    <small>Tối thiểu 6 ký tự</small>
+                </div>
+                <div class="form-group">
+                    <label>Xác Nhận Mật Khẩu *</label>
+                    <input type="password" class="form-control" id="xacNhanMatKhau" required minlength="6">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('changePasswordModal')">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Đổi</button>
+                </div>
+            </form>
         </div>
     </div>
 
-    <!-- Notification -->
     <div id="notification" class="notification" style="display: none;">
         <span id="notificationMessage"></span>
-        <span class="notification-close" onclick="closeNotification()">×</span>
+        <span class="notification-close" onclick="document.getElementById('notification').style.display='none'">×</span>
     </div>
 
     <script>
-        const API_BASE_URL = 'http://localhost:5000';
+        const API_BASE = 'http://localhost:5000';
         let adminData = [];
 
-        // Notification functions
-        function showNotification(message, type = 'success') {
-            const notification = document.getElementById('notification');
-            const messageElement = document.getElementById('notificationMessage');
-            messageElement.textContent = message;
-            notification.className = `notification ${type}`;
-            notification.style.display = 'block';
-            setTimeout(closeNotification, 3000);
-        }
+        const showNotification = (msg, type = 'success', alertId = 'notificationMessage') => {
+            const noti = document.getElementById('notification');
+            document.getElementById(alertId).textContent = msg;
+            noti.className = `notification ${type}`;
+            noti.style.display = 'block';
+            setTimeout(() => noti.style.display = 'none', 3000);
+        };
 
-        function closeNotification() {
-            document.getElementById('notification').style.display = 'none';
-        }
+        const toggleLoading = (show) => {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+            document.getElementById('dataTable').style.display = show ? 'none' : adminData.length ? 'table' : 'none';
+            document.getElementById('noData').style.display = show || adminData.length ? 'none' : 'block';
+        };
 
-        // Show/hide loading
-        function showLoading() {
-            document.getElementById('loadingDiv').style.display = 'flex';
-            document.getElementById('dataTable').style.display = 'none';
-            document.getElementById('noDataDiv').style.display = 'none';
-        }
-
-        function hideLoading() {
-            document.getElementById('loadingDiv').style.display = 'none';
-        }
-
-        // Hiển thị dữ liệu
-        function displayData(data = adminData) {
-            const tableBody = document.getElementById('tableBody');
-            const noDataDiv = document.getElementById('noDataDiv');
-            const dataTable = document.getElementById('dataTable');
-
-            hideLoading();
-            if (data.length === 0) {
-                dataTable.style.display = 'none';
-                noDataDiv.style.display = 'block';
-                return;
-            }
-
-            dataTable.style.display = 'table';
-            noDataDiv.style.display = 'none';
-
-            tableBody.innerHTML = '';
-            data.forEach(admin => {
-                const badgeClass = admin.VaiTro === 'Admin' ? 'badge-admin' : 'badge-Viewer';
-                const row = `
-                    <tr>
-                        <td>${admin.IdQuanTri}</td>
-                        <td>${admin.TenDangNhap}</td>
-                        <td>${admin.HoTen}</td>
-                        <td><span class="badge ${badgeClass}">${admin.VaiTro}</span></td>
-                        <td>${admin.MoTa || ''}</td>
-                        <td>
-                            <button class="btn btn-warning btn-sm" onclick="openEditModal(${admin.IdQuanTri})">✏️ Sửa</button>
-                            <button class="btn btn-primary btn-sm" onclick="openChangePasswordModal(${admin.IdQuanTri})">🔑 Đổi MK</button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteAdmin(${admin.IdQuanTri})">🗑️ Xóa</button>
-                        </td>
-                    </tr>
-                `;
-                tableBody.innerHTML += row;
-            });
-        }
-
-        // Tìm kiếm
-        document.getElementById('searchInput').addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            const filteredData = adminData.filter(admin => 
-                admin.TenDangNhap.toLowerCase().includes(searchTerm) ||
-                admin.HoTen.toLowerCase().includes(searchTerm) ||
-                admin.VaiTro.toLowerCase().includes(searchTerm) ||
-                (admin.MoTa && admin.MoTa.toLowerCase().includes(searchTerm))
-            );
-            displayData(filteredData);
-        });
-
-        // Modal functions
-        function openModal(modalId) {
-            document.getElementById(modalId).style.display = 'block';
-            document.getElementById(`${modalId}Alert`).innerHTML = '';
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-            const form = document.querySelector(`#${modalId} form`);
-            if (form) form.reset();
-        }
-
-        function openAddModal() {
-            openModal('addModal');
-        }
-
-        async function openEditModal(id) {
+        const loadData = async () => {
             try {
-                showLoading();
-                const response = await fetch(`${API_BASE_URL}/QuanTri/GetById/${id}`);
-                const data = await response.json();
-                hideLoading();
-                if (response.ok) {
+                toggleLoading(true);
+                const res = await fetch(`${API_BASE}/QuanTri/GetAll`);
+                adminData = await res.json();
+                toggleLoading(false);
+                if (res.ok) displayData();
+                else showNotification(`Lỗi: ${adminData.error}`, 'error');
+            } catch (e) {
+                toggleLoading(false);
+                showNotification(`Lỗi kết nối: ${e.message}`, 'error');
+                displayData([]);
+            }
+        };
+
+        const displayData = (data = adminData) => {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = data.length ? data.map(a => `
+                <tr>
+                    <td>${a.IdQuanTri}</td>
+                    <td>${a.TenDangNhap}</td>
+                    <td>${a.HoTen}</td>
+                    <td><span class="badge ${a.VaiTro === 'Admin' ? 'badge-admin' : 'badge-viewer'}">${a.VaiTro}</span></td>
+                    <td>${a.MoTa || ''}</td>
+                    <td>
+                        <button class="btn btn-warning btn-sm" onclick="openEditModal(${a.IdQuanTri})">✏️</button>
+                        <button class="btn btn-primary btn-sm" onclick="openChangePasswordModal(${a.IdQuanTri})">🔑</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteAdmin(${a.IdQuanTri})">🗑️</button>
+                    </td>
+                </tr>
+            `).join('') : '';
+            toggleLoading(false);
+        };
+
+        const openAddModal = () => {
+            document.getElementById('addForm').reset();
+            document.getElementById('addModalAlert').innerHTML = '';
+            document.getElementById('addModal').style.display = 'block';
+        };
+
+        const openEditModal = async (id) => {
+            try {
+                toggleLoading(true);
+                const res = await fetch(`${API_BASE}/QuanTri/GetById/${id}`);
+                const data = await res.json();
+                toggleLoading(false);
+                if (res.ok) {
                     document.getElementById('editId').value = data.IdQuanTri;
                     document.getElementById('editTenDangNhap').value = data.TenDangNhap;
                     document.getElementById('editHoTen').value = data.HoTen;
                     document.getElementById('editVaiTro').value = data.VaiTro;
                     document.getElementById('editMoTa').value = data.MoTa || '';
-                    openModal('editModal');
-                } else {
-                    showNotification(`Lỗi: ${data.error}`, 'error');
-                }
-            } catch (error) {
-                hideLoading();
-                showNotification(`Lỗi kết nối: ${error.message}`, 'error');
+                    document.getElementById('editModalAlert').innerHTML = '';
+                    document.getElementById('editModal').style.display = 'block';
+                } else showNotification(`Lỗi: ${data.error}`, 'error');
+            } catch (e) {
+                toggleLoading(false);
+                showNotification(`Lỗi kết nối: ${e.message}`, 'error');
             }
-        }
-
-        function openChangePasswordModal(id) {
-            document.getElementById('changePasswordId').value = id;
-            openModal('changePasswordModal');
-        }
-
-        // CRUD Operations
-        async function addAdmin() {
-            const tenDangNhap = document.getElementById('addTenDangNhap').value.trim();
-            const matKhau = document.getElementById('addMatKhau').value;
-            const hoTen = document.getElementById('addHoTen').value.trim();
-            const vaiTro = document.getElementById('addVaiTro').value;
-            const moTa = document.getElementById('addMoTa').value.trim();
-
-            if (!tenDangNhap || !matKhau || !hoTen || !vaiTro) {
-                document.getElementById('addModalAlert').innerHTML = 
-                    '<div class="alert alert-error">⚠️ Vui lòng điền đầy đủ thông tin bắt buộc!</div>';
-                return;
-            }
-
-            if (matKhau.length < 6) {
-                document.getElementById('addModalAlert').innerHTML = 
-                    '<div class="alert alert-error">⚠️ Mật khẩu phải có ít nhất 6 ký tự!</div>';
-                return;
-            }
-
-            try {
-                showLoading();
-                const response = await fetch(`${API_BASE_URL}/QuanTri/Register`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        TenDangNhap: tenDangNhap,
-                        MatKhau: matKhau,
-                        HoTen: hoTen,
-                        VaiTro: vaiTro,
-                        MoTa: moTa
-                    })
-                });
-                const result = await response.json();
-                hideLoading();
-                if (response.ok) {
-                    document.getElementById('addModalAlert').innerHTML = 
-                        '<div class="alert alert-success">✅ ' + result.message + '</div>';
-                    setTimeout(() => {
-                        closeModal('addModal');
-                        loadData();
-                    }, 1500);
-                } else {
-                    document.getElementById('addModalAlert').innerHTML = 
-                        '<div class="alert alert-error">❌ ' + result.error + '</div>';
-                }
-            } catch (error) {
-                hideLoading();
-                document.getElementById('addModalAlert').innerHTML = 
-                    '<div class="alert alert-error">❌ Lỗi kết nối: ' + error.message + '</div>';
-            }
-        }
-
-        async function updateAdmin() {
-            const id = parseInt(document.getElementById('editId').value);
-            const hoTen = document.getElementById('editHoTen').value.trim();
-            const vaiTro = document.getElementById('editVaiTro').value;
-            const moTa = document.getElementById('editMoTa').value.trim();
-
-            if (!hoTen || !vaiTro) {
-                document.getElementById('editModalAlert').innerHTML = 
-                    '<div class="alert alert-error">⚠️ Vui lòng điền đầy đủ thông tin bắt buộc!</div>';
-                return;
-            }
-
-            try {
-                showLoading();
-                const response = await fetch(`${API_BASE_URL}/QuanTri/Update/${id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        HoTen: hoTen,
-                        VaiTro: vaiTro,
-                        MoTa: moTa
-                    })
-                });
-                const result = await response.json();
-                hideLoading();
-                if (response.ok) {
-                    document.getElementById('editModalAlert').innerHTML = 
-                        '<div class="alert alert-success">✅ ' + result.message + '</div>';
-                    setTimeout(() => {
-                        closeModal('editModal');
-                        loadData();
-                    }, 1500);
-                } else {
-                    document.getElementById('editModalAlert').innerHTML = 
-                        '<div class="alert alert-error">❌ ' + result.error + '</div>';
-                }
-            } catch (error) {
-                hideLoading();
-                document.getElementById('editModalAlert').innerHTML = 
-                    '<div class="alert alert-error">❌ Lỗi kết nối: ' + error.message + '</div>';
-            }
-        }
-
-        async function changePassword() {
-            const id = parseInt(document.getElementById('changePasswordId').value);
-            const matKhauCu = document.getElementById('matKhauCu').value;
-            const matKhauMoi = document.getElementById('matKhauMoi').value;
-            const xacNhanMatKhau = document.getElementById('xacNhanMatKhau').value;
-
-            if (!matKhauCu || !matKhauMoi || !xacNhanMatKhau) {
-                document.getElementById('changePasswordModalAlert').innerHTML = 
-                    '<div class="alert alert-error">⚠️ Vui lòng điền đầy đủ thông tin!</div>';
-                return;
-            }
-
-            if (matKhauMoi.length < 6) {
-                document.getElementById('changePasswordModalAlert').innerHTML = 
-                    '<div class="alert alert-error">⚠️ Mật khẩu mới phải có ít nhất 6 ký tự!</div>';
-                return;
-            }
-
-            if (matKhauMoi !== xacNhanMatKhau) {
-                document.getElementById('changePasswordModalAlert').innerHTML = 
-                    '<div class="alert alert-error">⚠️ Mật khẩu mới và xác nhận mật khẩu không khớp!</div>';
-                return;
-            }
-
-            try {
-                showLoading();
-                const response = await fetch(`${API_BASE_URL}/QuanTri/ChangePassword/${id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        MatKhauCu: matKhauCu,
-                        MatKhauMoi: matKhauMoi
-                    })
-                });
-                const result = await response.json();
-                hideLoading();
-                if (response.ok) {
-                    document.getElementById('changePasswordModalAlert').innerHTML = 
-                        '<div class="alert alert-success">✅ ' + result.message + '</div>';
-                    setTimeout(() => {
-                        closeModal('changePasswordModal');
-                        loadData();
-                    }, 1500);
-                } else {
-                    document.getElementById('changePasswordModalAlert').innerHTML = 
-                        '<div class="alert alert-error">❌ ' + result.error + '</div>';
-                }
-            } catch (error) {
-                hideLoading();
-                document.getElementById('changePasswordModalAlert').innerHTML = 
-                    '<div class="alert alert-error">❌ Lỗi kết nối: ' + error.message + '</div>';
-            }
-        }
-
-        async function deleteAdmin(id) {
-            if (!confirm('⚠️ Bạn có chắc chắn muốn xóa quản trị viên này?')) {
-                return;
-            }
-
-            try {
-                showLoading();
-                const response = await fetch(`${API_BASE_URL}/QuanTri/Delete/${id}`, {
-                    method: 'DELETE'
-                });
-                const result = await response.json();
-                hideLoading();
-                if (response.ok) {
-                    showNotification('✅ ' + result.message, 'success');
-                    loadData();
-                } else {
-                    showNotification('❌ ' + result.error, 'error');
-                }
-            } catch (error) {
-                hideLoading();
-                showNotification('❌ Lỗi kết nối: ' + error.message, 'error');
-            }
-        }
-
-        async function refreshData() {
-            loadData();
-        }
-
-        async function loadData() {
-            try {
-                showLoading();
-                const response = await fetch(`${API_BASE_URL}/QuanTri/GetAll`);
-                const data = await response.json();
-                hideLoading();
-                if (response.ok) {
-                    adminData = data;
-                    displayData();
-                } else {
-                    showNotification(`Lỗi: ${data.error}`, 'error');
-                    displayData([]);
-                }
-            } catch (error) {
-                hideLoading();
-                showNotification(`Lỗi kết nối: ${error.message}`, 'error');
-                displayData([]);
-            }
-        }
-
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            const modals = ['addModal', 'editModal', 'changePasswordModal'];
-            modals.forEach(modalId => {
-                const modal = document.getElementById(modalId);
-                if (event.target === modal) {
-                    closeModal(modalId);
-                }
-            });
         };
 
-        // Initialize page
-        document.addEventListener('DOMContentLoaded', function() {
+        const openChangePasswordModal = (id) => {
+            document.getElementById('changePasswordId').value = id;
+            document.getElementById('changePasswordForm').reset();
+            document.getElementById('changePasswordModalAlert').innerHTML = '';
+            document.getElementById('changePasswordModal').style.display = 'block';
+        };
+
+        const closeModal = (modalId) => {
+            document.getElementById(modalId).style.display = 'none';
+            document.querySelector(`#${modalId} form`)?.reset();
+        };
+
+        const submitForm = async (e, formId, url, method, alertId) => {
+            e.preventDefault();
+            let data;
+            if (formId === 'addForm') {
+                const tenDangNhap = document.getElementById('addTenDangNhap').value.trim();
+                const matKhau = document.getElementById('addMatKhau').value;
+                const hoTen = document.getElementById('addHoTen').value.trim();
+                const vaiTro = document.getElementById('addVaiTro').value;
+                const moTa = document.getElementById('addMoTa').value.trim();
+                if (!tenDangNhap || !matKhau || !hoTen || !vaiTro) {
+                    document.getElementById(alertId).innerHTML = '<div class="alert alert-error">⚠️ Điền đầy đủ thông tin!</div>';
+                    return;
+                }
+                if (matKhau.length < 6) {
+                    document.getElementById(alertId).innerHTML = '<div class="alert alert-error">⚠️ Mật khẩu cần ≥ 6 ký tự!</div>';
+                    return;
+                }
+                data = { TenDangNhap: tenDangNhap, MatKhau: matKhau, HoTen: hoTen, VaiTro: vaiTro, MoTa: moTa };
+            } else if (formId === 'editForm') {
+                const id = parseInt(document.getElementById('editId').value);
+                const hoTen = document.getElementById('editHoTen').value.trim();
+                const vaiTro = document.getElementById('editVaiTro').value;
+                const moTa = document.getElementById('editMoTa').value.trim();
+                if (!hoTen || !vaiTro) {
+                    document.getElementById(alertId).innerHTML = '<div class="alert alert-error">⚠️ Điền đầy đủ thông tin!</div>';
+                    return;
+                }
+                data = { HoTen: hoTen, VaiTro: vaiTro, MoTa: moTa };
+                url += `/${id}`;
+            } else {
+                const id = parseInt(document.getElementById('changePasswordId').value);
+                const matKhauCu = document.getElementById('matKhauCu').value;
+                const matKhauMoi = document.getElementById('matKhauMoi').value;
+                const xacNhanMatKhau = document.getElementById('xacNhanMatKhau').value;
+                if (!matKhauCu || !matKhauMoi || !xacNhanMatKhau) {
+                    document.getElementById(alertId).innerHTML = '<div class="alert alert-error">⚠️ Điền đầy đủ thông tin!</div>';
+                    return;
+                }
+                if (matKhauMoi.length < 6) {
+                    document.getElementById(alertId).innerHTML = '<div class="alert alert-error">⚠️ Mật khẩu mới cần ≥ 6 ký tự!</div>';
+                    return;
+                }
+                if (matKhauMoi !== xacNhanMatKhau) {
+                    document.getElementById(alertId).innerHTML = '<div class="alert alert-error">⚠️ Mật khẩu không khớp!</div>';
+                    return;
+                }
+                data = { MatKhauCu: matKhauCu, MatKhauMoi: matKhauMoi };
+                url += `/${id}`;
+            }
+
+            try {
+                toggleLoading(true);
+                const res = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+                toggleLoading(false);
+                document.getElementById(alertId).innerHTML = `<div class="alert alert-${res.ok ? 'success' : 'error'}">${res.ok ? '✅' : '❌'} ${result.message || result.error}</div>`;
+                if (res.ok) setTimeout(() => { closeModal(formId.replace('Form', 'Modal')); loadData(); }, 1500);
+            } catch (e) {
+                toggleLoading(false);
+                document.getElementById(alertId).innerHTML = `<div class="alert alert-error">❌ Lỗi kết nối: ${e.message}</div>`;
+            }
+        };
+
+        const deleteAdmin = async (id) => {
+            if (!confirm('Xóa quản trị viên này?')) return;
+            try {
+                toggleLoading(true);
+                const res = await fetch(`${API_BASE}/QuanTri/Delete/${id}`, { method: 'DELETE' });
+                const result = await res.json();
+                toggleLoading(false);
+                showNotification(result.message || result.error, res.ok ? 'success' : 'error');
+                if (res.ok) loadData();
+            } catch (e) {
+                toggleLoading(false);
+                showNotification(`Lỗi kết nối: ${e.message}`, 'error');
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
             loadData();
+            document.getElementById('searchInput').addEventListener('input', () => {
+                const search = document.getElementById('searchInput').value.toLowerCase();
+                const filtered = adminData.filter(a => 
+                    a.TenDangNhap.toLowerCase().includes(search) ||
+                    a.HoTen.toLowerCase().includes(search) ||
+                    a.VaiTro.toLowerCase().includes(search) ||
+                    (a.MoTa && a.MoTa.toLowerCase().includes(search))
+                );
+                displayData(filtered);
+            });
+            document.getElementById('addForm').addEventListener('submit', (e) => submitForm(e, 'addForm', `${API_BASE}/QuanTri/Register`, 'POST', 'addModalAlert'));
+            document.getElementById('editForm').addEventListener('submit', (e) => submitForm(e, 'editForm', `${API_BASE}/QuanTri/Update`, 'PUT', 'editModalAlert'));
+            document.getElementById('changePasswordForm').addEventListener('submit', (e) => submitForm(e, 'changePasswordForm', `${API_BASE}/QuanTri/ChangePassword`, 'PUT', 'changePasswordModalAlert'));
+            window.onclick = (e) => {
+                ['addModal', 'editModal', 'changePasswordModal'].forEach(modalId => {
+                    if (e.target === document.getElementById(modalId)) closeModal(modalId);
+                });
+            };
         });
     </script>
 </body>
